@@ -1,0 +1,17 @@
+{
+  "name": "markdown-viewer",
+  "version": "1.0.0",
+  "description": "Interactive client-side markdown documentation viewer",
+  "scripts": {
+    "dev": "npx serve .",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "markdown",
+    "viewer",
+    "documentation",
+    "static-site"
+  ],
+  "author": "",
+  "license": "MIT"
+}

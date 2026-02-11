@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Viewer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.min.js"></script>
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" id="highlight-theme">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="scripts/config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header" id="sidebar-header"></div>
+            <nav class="sidebar-nav" id="sidebar-nav"></nav>
+            <div class="sidebar-footer" id="sidebar-footer"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Header -->
+            <div class="content-header">
+                <button id="toggle-sidebar" class="toggle-btn">☰</button>
+                <div class="breadcrumb" id="breadcrumb">
+                    <span>Home</span>
+                </div>
+                <div class="header-actions">
+                    <input type="file" id="header-file-input" accept=".md,.markdown" multiple style="display: none;">
+                    <button id="header-upload-btn" class="header-upload-btn" title="Upload markdown files">📤 Upload Files</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search documentation...">
+                </div>
+            </div>
+
+            <!-- Content Body -->
+            <div class="content-body" id="content-body"></div>
+
+            <!-- Footer -->
+            <div class="content-footer">
+                <button id="scroll-top" class="scroll-top-btn">↑</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="scripts/script.js"></script>
+</body>
+</html>
+
