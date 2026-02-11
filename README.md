@@ -1,18 +1,19 @@
 # 📚 Markdown Viewer
 
-A **pure static** interactive markdown documentation viewer with **zero npm dependencies**. All libraries are downloaded from CDN during build and bundled locally. Perfect for deploying on Vercel, Netlify, or any static hosting platform.
+A **pure static** interactive markdown documentation viewer with **zero npm dependencies**. All libraries are loaded from CDN. Perfect for deploying on Vercel, Netlify, or any static hosting platform.
 
 ## ✨ Features
 
 - **📁 File Upload**: Drag-and-drop or click to upload markdown (.md) files
+- **💾 LocalStorage Persistence**: Uploaded files are saved in browser localStorage
 - **📚 Dynamic Navigation**: Auto-generates sidebar navigation from markdown headings
 - **🔍 Search**: Filter topics in real-time
 - **📱 Responsive Design**: Mobile-friendly with collapsible sidebar
 - **🎨 Syntax Highlighting**: Code blocks highlighted using highlight.js
 - **⚙️ Configurable**: Customizable via `config.js` (site title, sections, welcome screen, etc.)
 - **🌐 100% Static**: No server required - pure HTML/CSS/JavaScript
-- **📦 Zero npm Dependencies**: All libraries downloaded from CDN during build
-- **🚀 One-Command Build**: Single command downloads and bundles everything
+- **📦 Zero npm Dependencies**: All libraries loaded from CDN
+- **🚀 Zero Build Process**: No build step required - deploy directly
 
 ## 🚀 Quick Start
 
@@ -21,13 +22,12 @@ A **pure static** interactive markdown documentation viewer with **zero npm depe
 ```bash
 git clone <repository-url>
 cd markdown-viewer
-npm run build    # Downloads dependencies from CDN and builds
-npm run dev      # Preview the site
+npm run serve    # Start local server
 ```
 
 Then open http://localhost:3000 in your browser.
 
-**Note**: No `npm install` needed! The build script downloads everything from CDN.
+**Note**: No `npm install` or build step needed! Just open `index.html` in your browser or use any static server.
 
 ## 🌐 Deploy to Vercel
 
@@ -37,14 +37,13 @@ Deploy your markdown viewer to Vercel with one click:
 
 ### How It Works
 
-The build process automatically:
-1. **Downloads dependencies from CDN**:
-   - `marked.js` (v11.2.0) from jsDelivr
-   - `highlight.js` (v11.9.0) from cdnjs
+This is a pure static site with **zero build process**:
+1. **All dependencies loaded from CDN**:
+   - `marked.js` (v17.0.1) from jsDelivr
+   - `highlight.js` (v11.11.1) from cdnjs
    - `github-dark.min.css` theme from cdnjs
-2. **Creates static site** - Outputs everything to `public/` directory
-3. **Bundles libraries** - All dependencies stored in `public/lib/`
-4. **Updates paths** - Ensures all library references are correct
+2. **No build step required** - Deploy directly to Vercel
+3. **Instant deployment** - Just push to Git and Vercel deploys automatically
 
 ### Manual Deployment
 
@@ -58,50 +57,40 @@ The build process automatically:
    vercel
    ```
 
-That's it! No `npm install` needed - the build script downloads everything from CDN automatically.
+That's it! No build process needed - Vercel serves the static files directly.
 
 ### Other Static Hosts
 
 You can deploy to any static hosting platform:
 
-- **Netlify**: Connect your repo, build command: `npm run build`, publish directory: `public`
-- **GitHub Pages**: Build locally and push the `public/` folder
-- **Cloudflare Pages**: Same as Netlify configuration
-- **Any static host**: Just upload the contents of `public/` after running `npm run build`
+- **Netlify**: Connect your repo, no build command needed, publish directory: `.` (root)
+- **GitHub Pages**: Just push to `gh-pages` branch
+- **Cloudflare Pages**: Connect repo, no build command needed
+- **Any static host**: Just upload all files (no build required)
 
 ## 📖 Usage
 
-### Building the Static Site
-
-```bash
-npm run build
-```
-
-This single command:
-1. Downloads `marked.js`, `highlight.js`, and CSS theme from CDN
-2. Copies all HTML, CSS, and JavaScript files to `public/`
-3. Bundles all libraries into `public/lib/`
-4. Updates all paths to reference local libraries
-5. Creates a production-ready static site
-
-**No npm dependencies required!** Everything is downloaded from CDN during build.
-
 ### Local Preview
 
-After building, preview the site locally:
+Preview the site locally:
 
 ```bash
-npm run dev
+npm run serve
 ```
+
+Or simply open `index.html` in your browser - no server required!
 
 Then open http://localhost:3000 in your browser.
 
 ### Using the Viewer
 
-1. **Upload Files**: Click the "Upload Files" button or drag and drop `.md` files onto the upload area
-2. **Navigate**: Use the sidebar to browse through your documentation sections
+1. **Upload Files**: Click the "📤 Choose Markdown Files" button or drag and drop `.md` files onto the upload area
+2. **Navigate**: Use the sidebar to browse through your uploaded files and sections
 3. **Search**: Use the search box to filter topics
-4. **Mobile**: Click the hamburger menu (☰) to toggle the sidebar on mobile devices
+4. **Remove Files**: Click the red ✕ button next to any uploaded file to remove it
+5. **Mobile**: Click the hamburger menu (☰) to toggle the sidebar on mobile devices
+
+**Note**: Uploaded files are saved in your browser's localStorage and will persist across sessions.
 
 ## ⚙️ Configuration
 
@@ -152,63 +141,48 @@ const DOCS_CONFIG = {
 
 ```
 markdown-viewer/
+├── css/
+│   └── styles.css      # Custom CSS styles
 ├── scripts/
-│   └── build.js        # Build script (downloads from CDN & creates static site)
-├── lib/                # Downloaded libraries (created during build)
-│   ├── marked.min.js   # Downloaded from jsDelivr
-│   ├── highlight.min.js # Downloaded from cdnjs
-│   └── github-dark.min.css # Downloaded from cdnjs
+│   ├── config.js       # Configuration file
+│   └── script.js       # Main application logic
 ├── docs/
 │   └── example.md      # Example documentation
-├── public/             # Build output (created by npm run build)
-│   ├── index.html      # Main HTML (with updated paths)
-│   ├── script.js       # Application logic
-│   ├── styles.css      # Styles
-│   ├── config.js       # Configuration
-│   ├── docs/           # Documentation files
-│   └── lib/            # Bundled libraries (copied from lib/)
-│       ├── marked.min.js
-│       ├── highlight.min.js
-│       └── github-dark.min.css
-├── config.js           # Configuration file
-├── index.html          # Main HTML file (source)
-├── script.js           # Application logic (source)
-├── styles.css          # Styles (source)
+├── index.html          # Main HTML file
 ├── vercel.json         # Vercel deployment config
-├── package.json        # Build scripts only (no dependencies!)
-├── DEPLOYMENT.md       # Deployment guide
+├── package.json        # Scripts only (no dependencies!)
 └── README.md           # This file
 ```
+
+**Note**: All JavaScript libraries (marked.js, highlight.js) are loaded from CDN - no local copies needed!
 
 ## 🛠️ Development
 
 ### Prerequisites
 
-- Node.js >= 14.0.0
+- Node.js >= 14.0.0 (only for local development server)
+- Or any static file server
+- Or just open `index.html` in your browser!
 
 ### Setup
 
-```bash
-npm install
-```
-
-This will automatically download the highlight.js browser build to the `lib/` directory. The marked.js library is used directly from `node_modules`.
-
-### Running Locally
+No setup required! Just clone and run:
 
 ```bash
-npm start
+git clone <repository-url>
+cd markdown-viewer
+npm run serve    # Or open index.html directly
 ```
 
 ## 📦 Dependencies
 
-All dependencies are downloaded from CDN during build:
+All dependencies are loaded from CDN at runtime:
 
-- **marked** (v11.2.0): Fast markdown parser - from [jsDelivr](https://cdn.jsdelivr.net/npm/marked@11.2.0/marked.min.js)
-- **highlight.js** (v11.9.0): Syntax highlighting - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js)
-- **github-dark theme**: Syntax highlighting theme - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css)
+- **marked** (v17.0.1): Fast markdown parser - from [jsDelivr](https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.min.js)
+- **highlight.js** (v11.11.1): Syntax highlighting - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js)
+- **github-dark theme**: Syntax highlighting theme - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css)
 
-**Zero npm dependencies!** All libraries are downloaded during build and bundled into the static site. No runtime CDN dependencies!
+**Zero npm dependencies!** All libraries are loaded from CDN - no local files, no build process required!
 
 ## 📄 License
 
