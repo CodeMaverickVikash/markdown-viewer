@@ -1,4 +1,7 @@
 {
+  "buildCommand": null,
+  "installCommand": null,
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",
@@ -18,12 +21,8 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
   ]
 }
+
+
 
