@@ -4,19 +4,15 @@ const state = {
     currentSection: null
 };
 
-const sidebarHeader = document.getElementById('sidebar-header');
 const sidebarNav = document.getElementById('sidebar-nav');
-const sidebarFooter = document.getElementById('sidebar-footer');
 const contentBody = document.getElementById('content-body');
 const breadcrumb = document.getElementById('breadcrumb');
 const toggleSidebar = document.getElementById('toggle-sidebar');
 const sidebar = document.querySelector('.sidebar');
 const scrollTopBtn = document.getElementById('scroll-top');
-const searchInput = document.getElementById('search-input');
 
 async function init() {
     try {
-        populateSidebarHeaderFooter();
         await loadMarkdownFiles();
         populateSidebar();
         setupEventListeners();
@@ -25,22 +21,6 @@ async function init() {
         console.error('Error initializing app:', error);
         showError('Failed to load documentation files');
     }
-}
-
-function populateSidebarHeaderFooter() {
-    sidebarHeader.innerHTML = `
-        <h1>${DOCS_CONFIG.siteTitle}</h1>
-        <p>${DOCS_CONFIG.siteSubtitle}</p>
-    `;
-
-    const footerLinksHTML = DOCS_CONFIG.footerLinks.map(link =>
-        `<a href="${link.url}" target="_blank">${link.text}</a>`
-    ).join('');
-
-    sidebarFooter.innerHTML = `
-        ${footerLinksHTML}
-        <p>${DOCS_CONFIG.footerText}</p>
-    `;
 }
 
 async function loadMarkdownFiles() {
@@ -107,32 +87,12 @@ function saveUploadedFilesToStorage() {
     }
 }
 
-function extractTopics(markdown) {
-    const topics = [];
-    const lines = markdown.split('\n');
-    const headingLevel = DOCS_CONFIG.navigationHeadingLevel || 2;
-    const headingPattern = new RegExp(`^${'#'.repeat(headingLevel)}\\s+(.+)$`);
-
-    for (let line of lines) {
-        const match = line.match(headingPattern);
-        if (match) {
-            const title = match[1].trim();
-            if (!title.toLowerCase().includes('table of contents') &&
-                !title.toLowerCase().includes('from basic to advanced')) {
-                topics.push({
-                    title: title,
-                    id: title.toLowerCase()
-                        .replace(/[^\w\s-]/g, '')
-                        .replace(/\s+/g, '-')
-                });
-            }
-        }
-    }
-
-    return topics;
+// Parse markdown and return parsed HTML
+function parseMarkdown(markdown) {
+    return marked.parse(markdown);
 }
 
-// Populate sidebar with topics from all files
+// Populate sidebar with files - just add files as clickable items
 function populateSidebar() {
     let navHTML = '';
 
@@ -147,21 +107,8 @@ function populateSidebar() {
             const fileData = state.files.get(fileConfig.id);
 
             if (fileData) {
-                const topics = extractTopics(fileData.content);
-
-                // Show file name if multiple files in section OR if config says so
-                if (section.files.length > 1 || DOCS_CONFIG.showFileNameInNav) {
-                    navHTML += `<li class="file-header" title="${fileConfig.name}">📄 ${fileConfig.name}</li>`;
-                }
-
-                // Add all topics from this file
-                if (topics.length === 0) {
-                    navHTML += `<li class="no-topics">No headings found in this file</li>`;
-                } else {
-                    topics.forEach(topic => {
-                        navHTML += `<li class="topic-item" data-file-id="${fileConfig.id}" data-section="${topic.id}">${topic.title}</li>`;
-                    });
-                }
+                // Add file as a clickable item
+                navHTML += `<li class="file-item" data-file-id="${fileConfig.id}">📄 ${fileConfig.name}</li>`;
             }
         });
 
@@ -177,15 +124,14 @@ function populateSidebar() {
         addUploadedFilesToSidebar(uploadedFiles);
     }
 
-    // Add click listeners to all topic items
-    document.querySelectorAll('.nav-section li.topic-item').forEach(item => {
+    // Add click listeners to all file items
+    document.querySelectorAll('.file-item').forEach(item => {
         item.addEventListener('click', () => {
             const fileId = item.dataset.fileId;
-            const section = item.dataset.section;
-            loadSection(fileId, section);
+            loadFullFile(fileId);
 
             // Update active state
-            document.querySelectorAll('.nav-section li.topic-item').forEach(li => li.classList.remove('active'));
+            document.querySelectorAll('.file-item, .uploaded-file-item').forEach(li => li.classList.remove('active'));
             item.classList.add('active');
 
             // Close sidebar on mobile
@@ -196,8 +142,85 @@ function populateSidebar() {
     });
 }
 
-// Load and display a specific section
-function loadSection(fileId, sectionId) {
+// Extract headings from markdown content
+function extractHeadings(content) {
+    const headings = [];
+    const headingRegex = /^(#{1,6})\s+(.+)$/gm;
+    let match;
+
+    while ((match = headingRegex.exec(content)) !== null) {
+        const level = match[1].length; // 1-6
+        const title = match[2];
+        headings.push({ level, title });
+    }
+
+    return headings;
+}
+
+// Generate slug from heading text
+function generateSlug(text) {
+    let slug = text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+    // Ensure ID doesn't start with a digit (invalid CSS selector)
+    if (/^\d/.test(slug)) {
+        slug = 'h-' + slug;
+    }
+
+    return slug || 'heading';
+}
+
+// Add IDs to headings in HTML content
+function addHeadingIds(html) {
+    // Match heading tags and add IDs
+    return html.replace(/<(h[1-6])>(.+?)<\/\1>/g, (match, tag, content) => {
+        const id = generateSlug(content);
+        return `<${tag} id="${id}">${content}</${tag}>`;
+    });
+}
+
+// Create table of contents
+function createTableOfContents(headings) {
+    if (headings.length === 0) return '';
+
+    let tocHTML = '<nav class="table-of-contents"><h3>Contents</h3><ul>';
+    let currentLevel = 0;
+    const openLists = [];
+
+    headings.forEach((heading) => {
+        const slug = generateSlug(heading.title);
+
+        // Handle level changes
+        while (currentLevel < heading.level) {
+            tocHTML += '<ul>';
+            openLists.push('</ul>');
+            currentLevel++;
+        }
+
+        while (currentLevel > heading.level) {
+            tocHTML += openLists.pop();
+            currentLevel--;
+        }
+
+        tocHTML += `<li><a href="#${slug}" class="toc-link">${heading.title}</a></li>`;
+    });
+
+    // Close remaining open lists
+    while (openLists.length > 0) {
+        tocHTML += openLists.pop();
+    }
+
+    tocHTML += '</ul></nav>';
+    return tocHTML;
+}
+
+// Load and display full markdown file with TOC
+function loadFullFile(fileId) {
     const fileData = state.files.get(fileId);
 
     if (!fileData) {
@@ -205,78 +228,55 @@ function loadSection(fileId, sectionId) {
         return;
     }
 
-    // Find the section in the markdown
-    const section = extractSection(fileData.content, sectionId);
+    // Extract headings before parsing
+    const headings = extractHeadings(fileData.content);
 
-    if (section) {
-        // Convert markdown to HTML
-        const html = marked.parse(section);
+    // Convert markdown to HTML
+    let html = marked.parse(fileData.content);
 
-        // Display content
-        contentBody.innerHTML = `<div class="markdown-content">${html}</div>`;
+    // Add IDs to headings for anchor linking
+    html = addHeadingIds(html);
 
-        // Apply syntax highlighting
-        document.querySelectorAll('pre code').forEach((block) => {
-            hljs.highlightElement(block);
-        });
+    // Create table of contents
+    const toc = createTableOfContents(headings);
 
-        // Update breadcrumb
-        updateBreadcrumb(fileData.name, sectionId);
-
-        // Scroll to top
-        contentBody.scrollTop = 0;
-
-        // Update state
-        state.currentFileId = fileId;
-        state.currentSection = sectionId;
-    } else {
-        showError('Section not found');
-    }
-}
-
-// Extract a specific section from markdown
-function extractSection(markdown, sectionId) {
-    const lines = markdown.split('\n');
-    let inSection = false;
-    let sectionContent = [];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // Check if this is the start of our section
-        if (line.match(/^##\s+/)) {
-            const title = line.replace(/^##\s+/, '').trim();
-            const id = title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-
-            if (id === sectionId) {
-                inSection = true;
-                sectionContent.push(line);
-                continue;
-            } else if (inSection) {
-                // We've hit the next section, stop
-                break;
-            }
-        }
-
-        if (inSection) {
-            sectionContent.push(line);
-        }
-    }
-
-    return sectionContent.join('\n');
-}
-
-// Update breadcrumb navigation
-function updateBreadcrumb(fileName, sectionId) {
-    const sectionName = sectionId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    breadcrumb.innerHTML = `
-        <span>Home</span>
-        <span>›</span>
-        <span>${fileName}</span>
-        <span>›</span>
-        <span>${sectionName}</span>
+    // Display content with TOC
+    contentBody.innerHTML = `
+        <div class="markdown-container">
+            <div class="markdown-content">${html}</div>
+            ${toc}
+        </div>
     `;
+
+    // Apply syntax highlighting
+    document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    });
+
+    // Setup TOC click handlers
+    document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const href = link.getAttribute('href');
+            const headingId = href.startsWith('#') ? href.substring(1) : href;
+            const target = document.getElementById(headingId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Highlight the heading
+                target.classList.add('highlight');
+                setTimeout(() => target.classList.remove('highlight'), 2000);
+            }
+        });
+    });
+
+    // Scroll to top
+    contentBody.scrollTop = 0;
+
+    // Update state
+    state.currentFileId = fileId;
 }
+
+
 
 // Show error message
 function showError(message) {
@@ -459,18 +459,15 @@ async function handleFiles(files) {
 
         // Auto-load first file
         if (loadedFiles.length > 0) {
-            const topics = extractTopics(loadedFiles[0].content);
-            if (topics.length > 0) {
-                setTimeout(() => {
-                    loadSection(loadedFiles[0].id, topics[0].id);
+            setTimeout(() => {
+                loadFullFile(loadedFiles[0].id);
 
-                    // Highlight in sidebar
-                    const listItem = document.querySelector(`li[data-file-id="${loadedFiles[0].id}"][data-section="${topics[0].id}"]`);
-                    if (listItem) {
-                        listItem.classList.add('active');
-                    }
-                }, 500);
-            }
+                // Highlight in sidebar
+                const listItem = document.querySelector(`li[data-file-id="${loadedFiles[0].id}"]`);
+                if (listItem) {
+                    listItem.classList.add('active');
+                }
+            }, 500);
         }
 
     } catch (error) {
@@ -498,60 +495,40 @@ function addUploadedFilesToSidebar(files) {
 
     const uploadedNav = document.getElementById('uploaded-files-nav');
 
-    // Add each file's topics (table of contents)
+    // Add each file
     files.forEach(file => {
-        const topics = extractTopics(file.content);
-
-        // Create file header with remove button
-        const fileHeaderLi = document.createElement('li');
-        fileHeaderLi.className = 'file-header';
-        fileHeaderLi.dataset.fileId = file.id;
-        fileHeaderLi.title = file.name;
-        fileHeaderLi.innerHTML = `
+        // Create file item with remove button
+        const fileLi = document.createElement('li');
+        fileLi.className = 'uploaded-file-item';
+        fileLi.dataset.fileId = file.id;
+        fileLi.innerHTML = `
             <span class="file-name">📄 ${file.name}</span>
             <button class="remove-file-btn" data-file-id="${file.id}" title="Remove this file">✕</button>
         `;
-        uploadedNav.appendChild(fileHeaderLi);
+        uploadedNav.appendChild(fileLi);
+
+        // Add click handler to open file
+        // const fileSpan = fileLi.querySelector('.file-name');
+        fileLi.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadFullFile(file.id);
+
+            // Update active state
+            document.querySelectorAll('.file-item, .uploaded-file-item').forEach(li => li.classList.remove('active'));
+            fileLi.classList.add('active');
+
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+            }
+        });
 
         // Add remove button click handler
-        const removeBtn = fileHeaderLi.querySelector('.remove-file-btn');
+        const removeBtn = fileLi.querySelector('.remove-file-btn');
         removeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             removeUploadedFile(file.id);
         });
-
-        // Add all topics from this file
-        if (topics.length === 0) {
-            // If no topics found, show a message
-            const noTopicsLi = document.createElement('li');
-            noTopicsLi.className = 'no-topics';
-            noTopicsLi.dataset.fileId = file.id;
-            noTopicsLi.textContent = 'No headings found in this file';
-            uploadedNav.appendChild(noTopicsLi);
-        } else {
-            topics.forEach(topic => {
-                const li = document.createElement('li');
-                li.dataset.fileId = file.id;
-                li.dataset.section = topic.id;
-                li.textContent = topic.title;
-                li.classList.add('topic-item');
-
-                li.addEventListener('click', () => {
-                    loadSection(file.id, topic.id);
-
-                    // Update active state
-                    document.querySelectorAll('.nav-section li.topic-item').forEach(item => item.classList.remove('active'));
-                    li.classList.add('active');
-
-                    // Close sidebar on mobile
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('active');
-                    }
-                });
-
-                uploadedNav.appendChild(li);
-            });
-        }
     });
 }
 
@@ -640,19 +617,9 @@ function setupEventListeners() {
 
     // Auto-hide top nav on scroll
     let lastScrollTop = 0;
-    const topNav = document.querySelector('.content-header');
 
     contentBody.addEventListener('scroll', () => {
         const scrollTop = contentBody.scrollTop;
-
-        // Auto-hide/show top nav based on scroll direction
-        if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down - hide nav
-            topNav.classList.add('nav-hidden');
-        } else {
-            // Scrolling up - show nav
-            topNav.classList.remove('nav-hidden');
-        }
 
         lastScrollTop = scrollTop;
 
@@ -669,12 +636,6 @@ function setupEventListeners() {
         contentBody.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    // Search functionality
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        filterTopics(searchTerm);
-    });
-
     // Quick link cards - use event delegation since they're dynamically created
     contentBody.addEventListener('click', (e) => {
         const card = e.target.closest('.quick-link-card');
@@ -683,17 +644,13 @@ function setupEventListeners() {
             const fileData = state.files.get(fileId);
 
             if (fileData) {
-                const topics = extractTopics(fileData.content);
+                loadFullFile(fileId);
 
-                if (topics.length > 0) {
-                    loadSection(fileId, topics[0].id);
-
-                    // Highlight in sidebar
-                    const listItem = document.querySelector(`li[data-file-id="${fileId}"][data-section="${topics[0].id}"]`);
-                    if (listItem) {
-                        document.querySelectorAll('.nav-section li').forEach(li => li.classList.remove('active'));
-                        listItem.classList.add('active');
-                    }
+                // Highlight in sidebar
+                const listItem = document.querySelector(`li[data-file-id="${fileId}"]`);
+                if (listItem) {
+                    document.querySelectorAll('.file-item, .uploaded-file-item').forEach(li => li.classList.remove('active'));
+                    listItem.classList.add('active');
                 }
             }
         }
@@ -730,18 +687,6 @@ function setupHeaderUpload() {
             }
         });
     }
-}
-
-// Filter topics based on search term
-function filterTopics(searchTerm) {
-    document.querySelectorAll('.nav-section li').forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if (text.includes(searchTerm)) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
-        }
-    });
 }
 
 // Initialize when DOM is ready

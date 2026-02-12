@@ -6,45 +6,54 @@
     <title>Documentation Viewer</title>
     <link rel="stylesheet" href="css/styles.css">
     <!-- Marked.js for Markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.min.js"></script>
+    <script src="libs/marked.min.js"></script>
     <!-- Highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" id="highlight-theme">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-    <script src="scripts/config.js"></script>
+    <link rel="stylesheet" href="libs/highlight.js/github-dark.min.css" id="highlight-theme">
+    <script src="libs/highlight.js/highlight.min.js"></script>
+    <script>
+        // Configuration
+        const DOCS_CONFIG = {
+            siteTitle: "📚 Documentation Viewer",
+            siteSubtitle: "Interactive Markdown Viewer",
+            footerText: "© 2026 CodeMaravic. All rights reserved.",
+            footerLinks: [],
+            sections: [],
+            welcome: {
+                title: "🚀 Welcome to Documentation Viewer",
+                subtitle: "Upload your markdown files to get started",
+                quickLinks: [],
+                stats: []
+            },
+            showFileNameInNav: false,
+            syntaxTheme: "github-dark"
+        };
+    </script>
 </head>
 <body>
     <div class="container">
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header" id="sidebar-header"></div>
-            <nav class="sidebar-nav" id="sidebar-nav"></nav>
-            <div class="sidebar-footer" id="sidebar-footer"></div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="content">
-            <!-- Header -->
-            <div class="content-header">
-                <button id="toggle-sidebar" class="toggle-btn">☰</button>
-                <div class="breadcrumb" id="breadcrumb">
-                    <span>Home</span>
-                </div>
+            <div class="sidebar-header" id="sidebar-header">
+                <h1>📚 Markdown Viewer</h1>
                 <div class="header-actions">
                     <input type="file" id="header-file-input" accept=".md,.markdown" multiple style="display: none;">
                     <button id="header-upload-btn" class="header-upload-btn" title="Upload markdown files">📤 Upload Files</button>
                 </div>
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search documentation...">
-                </div>
             </div>
+            <nav class="sidebar-nav" id="sidebar-nav"></nav>
+            <div class="sidebar-footer" id="sidebar-footer">
+                <p>© 2026 CodeMaravic. All rights reserved.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <button id="toggle-sidebar" class="toggle-btn">☰</button>
 
             <!-- Content Body -->
             <div class="content-body" id="content-body"></div>
 
-            <!-- Footer -->
-            <div class="content-footer">
-                <button id="scroll-top" class="scroll-top-btn">↑</button>
-            </div>
+            <button id="scroll-top" class="scroll-top-btn">↑</button>
         </main>
     </div>
 

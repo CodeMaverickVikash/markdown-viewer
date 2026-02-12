@@ -6,11 +6,11 @@ A **pure static** interactive markdown documentation viewer with **zero npm depe
 
 - **📁 File Upload**: Drag-and-drop or click to upload markdown (.md) files
 - **💾 LocalStorage Persistence**: Uploaded files are saved in browser localStorage
-- **📚 Dynamic Navigation**: Auto-generates sidebar navigation from markdown headings
+- **📚 Dynamic Navigation**: Auto-generates sidebar navigation from markdown headings (all heading levels)
 - **🔍 Search**: Filter topics in real-time
 - **📱 Responsive Design**: Mobile-friendly with collapsible sidebar
 - **🎨 Syntax Highlighting**: Code blocks highlighted using highlight.js
-- **⚙️ Configurable**: Customizable via `config.js` (site title, sections, welcome screen, etc.)
+- **⚙️ Configurable**: Customize in HTML script tag (site title, sections, welcome screen, etc.)
 - **🌐 100% Static**: No server required - pure HTML/CSS/JavaScript
 - **📦 Zero npm Dependencies**: All libraries loaded from CDN
 - **🚀 Zero Build Process**: No build step required - deploy directly
@@ -94,13 +94,13 @@ Then open http://localhost:3000 in your browser.
 
 ## ⚙️ Configuration
 
-Edit `config.js` to customize your documentation viewer:
+Edit the `DOCS_CONFIG` object in `index.html` (inside the `<script>` tag) to customize your documentation viewer:
 
 ```javascript
 const DOCS_CONFIG = {
   siteTitle: "📚 Documentation Viewer",
   siteSubtitle: "Interactive Markdown Viewer",
-  footerText: "Made with ❤️",
+  footerText: "© 2026 CodeMaravic. All rights reserved.",
   footerLinks: [
     { text: "GitHub", url: "https://github.com/..." }
   ],
@@ -119,7 +119,6 @@ const DOCS_CONFIG = {
     quickLinks: [],
     stats: []
   },
-  navigationHeadingLevel: 2,
   showFileNameInNav: false,
   syntaxTheme: "github-dark"
 };
@@ -131,9 +130,8 @@ const DOCS_CONFIG = {
 - `siteSubtitle`: Subtitle displayed below the title
 - `footerText`: Text displayed in the sidebar footer
 - `footerLinks`: Array of links to display in the footer
-- `sections`: Pre-configured documentation sections and files
+- `sections`: Pre-configured documentation sections and files (optional - can upload files directly)
 - `welcome`: Welcome screen configuration
-- `navigationHeadingLevel`: Heading level to use for navigation (default: 2 for H2)
 - `showFileNameInNav`: Show file names in navigation
 - `syntaxTheme`: Syntax highlighting theme
 
@@ -143,12 +141,14 @@ const DOCS_CONFIG = {
 markdown-viewer/
 ├── css/
 │   └── styles.css      # Custom CSS styles
+├── libs/
+│   ├── marked.min.js   # Local markdown parser
+│   └── highlight.js/   # Local syntax highlighting
 ├── scripts/
-│   ├── config.js       # Configuration file
 │   └── script.js       # Main application logic
 ├── docs/
 │   └── example.md      # Example documentation
-├── index.html          # Main HTML file
+├── index.html          # Main HTML file (includes config)
 ├── vercel.json         # Vercel deployment config
 ├── package.json        # Scripts only (no dependencies!)
 └── README.md           # This file
@@ -176,13 +176,13 @@ npm run serve    # Or open index.html directly
 
 ## 📦 Dependencies
 
-All dependencies are loaded from CDN at runtime:
+All dependencies are loaded locally with fallback to CDN:
 
 - **marked** (v17.0.1): Fast markdown parser - from [jsDelivr](https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.min.js)
 - **highlight.js** (v11.11.1): Syntax highlighting - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js)
 - **github-dark theme**: Syntax highlighting theme - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css)
 
-**Zero npm dependencies!** All libraries are loaded from CDN - no local files, no build process required!
+**Zero npm dependencies!** All libraries are included locally - works fully offline, no build process required!
 
 ## 📄 License
 
