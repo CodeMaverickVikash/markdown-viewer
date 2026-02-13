@@ -3,131 +3,125 @@
 /* Import highlight.js theme */
 @import 'highlight.js/styles/github-dark.css';
 
-/* CSS Custom Properties for Theming */
-:root {
-  /* Primary Colors */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
-  --color-primary: var(--color-primary-500);
-
-  /* Secondary Colors */
-  --color-secondary-50: #ecfeff;
-  --color-secondary-100: #cffafe;
-  --color-secondary-200: #a5f3fc;
-  --color-secondary-300: #67e8f9;
-  --color-secondary-400: #22d3ee;
-  --color-secondary-500: #06b6d4;
-  --color-secondary-600: #0891b2;
-  --color-secondary-700: #0e7490;
-  --color-secondary-800: #155e75;
-  --color-secondary-900: #164e63;
-  --color-secondary: var(--color-secondary-500);
-
-  /* Neutral/Gray Colors */
-  --color-neutral-50: #f8fafc;
-  --color-neutral-100: #f1f5f9;
-  --color-neutral-200: #e2e8f0;
-  --color-neutral-300: #cbd5e1;
-  --color-neutral-400: #94a3b8;
-  --color-neutral-500: #64748b;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1e293b;
-  --color-neutral-900: #0f172a;
-
-  /* Semantic Colors */
-  --color-success: #22c55e;
-  --color-success-hover: #16a34a;
-  --color-error: #ef4444;
-  --color-error-hover: #dc2626;
-  --color-warning: #f59e0b;
-  --color-info: #3b82f6;
-
-  /* Background Colors */
-  --bg-primary: var(--color-neutral-50);
-  --bg-secondary: var(--color-neutral-100);
-  --bg-sidebar: var(--color-neutral-800);
-  --bg-card: #ffffff;
-  --bg-hover: var(--color-neutral-100);
-
-  /* Text Colors */
-  --text-primary: var(--color-neutral-900);
-  --text-secondary: var(--color-neutral-600);
-  --text-tertiary: var(--color-neutral-400);
-  --text-inverse: #ffffff;
-
-  /* Border Colors */
-  --border-light: var(--color-neutral-200);
-  --border-default: var(--color-neutral-300);
-  --border-dark: var(--color-neutral-400);
-
-  /* Code Colors */
-  --code-bg: #0d1117;
-  --code-text: #c9d1d9;
-  --code-border: rgba(255, 255, 255, 0.08);
-  --code-inline-bg: #f8fafc;
-  --code-inline-text: #1f2937;
-  --code-inline-border: #e2e8f0;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Component Specific */
-  --sidebar-width: 300px;
-  --header-height: 64px;
+/* Custom markdown content styles using Tailwind @apply */
+.markdown-content {
+  @apply text-base leading-relaxed text-neutral-800 max-w-4xl mx-auto;
 }
 
-/* Custom markdown content styles */
 .markdown-content h1,
-.markdown-content h2 {
-  scroll-margin-top: 100px;
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  @apply scroll-mt-24 font-bold mt-8 mb-4 leading-tight text-neutral-900;
 }
 
 .markdown-content h1 {
-  border-bottom: 2px solid var(--border-light);
-  padding-bottom: 0.75rem;
+  @apply text-4xl border-b-2 border-neutral-200 pb-3 mt-0;
 }
 
 .markdown-content h2 {
-  border-bottom: 1px solid var(--border-light);
-  padding-bottom: 0.5rem;
+  @apply text-3xl border-b border-neutral-200 pb-2;
+}
+
+.markdown-content h3 {
+  @apply text-2xl;
+}
+
+.markdown-content h4 {
+  @apply text-xl;
+}
+
+.markdown-content h5 {
+  @apply text-lg;
+}
+
+.markdown-content h6 {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.markdown-content p {
+  margin-bottom: 1.25rem;
+}
+
+.markdown-content a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.markdown-content a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin-bottom: 1.25rem;
+  padding-left: 2rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1.5rem;
+  margin: 1.5rem 0;
+  color: #6b7280;
+  font-style: italic;
+  background: #f9fafb;
+  padding: 1rem 1.5rem;
+  border-radius: 0.375rem;
+}
+
+.markdown-content table {
+  @apply w-full border-collapse my-6 text-sm;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border border-neutral-200 px-4 py-3 text-left;
+}
+
+.markdown-content th {
+  @apply bg-neutral-50 font-semibold text-neutral-900;
+}
+
+.markdown-content tr:nth-child(even) {
+  @apply bg-neutral-50;
+}
+
+.markdown-content img {
+  @apply max-w-full h-auto rounded-lg my-6 shadow-md;
+}
+
+.markdown-content hr {
+  @apply border-0 border-t-2 border-neutral-200 my-8;
 }
 
 .markdown-content pre {
-  background-color: var(--code-bg);
-  border: 1px solid var(--code-border);
+  @apply bg-[#0d1117] border border-neutral-700 rounded-lg p-5 overflow-x-auto my-6 shadow-sm;
 }
 
 .markdown-content code {
-  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+  @apply font-mono text-[0.9em];
 }
 
 .markdown-content pre code {
-  background-color: transparent;
-  color: var(--code-text);
+  @apply bg-transparent text-[#c9d1d9] p-0 border-0;
 }
 
 .markdown-content code:not(pre code) {
-  background-color: var(--code-inline-bg);
-  color: var(--code-inline-text);
-  border: 1px solid var(--code-inline-border);
+  background-color: #f3f4f6;
+  color: #dc2626;
+  border: 1px solid #e5e7eb;
   padding: 0.2rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
+  font-weight: 500;
 }

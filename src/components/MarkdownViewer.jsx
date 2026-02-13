@@ -19,7 +19,7 @@ function MarkdownViewer({ content }) {
   }, [content])
 
   return (
-    <div className="flex-1 overflow-y-auto p-10 bg-neutral-50 pt-5 pr-5 markdown-content" ref={contentRef}>
+    <div className="flex-1 overflow-y-auto px-8 py-12 bg-white markdown-content" ref={contentRef}>
       {/* Content will be rendered here */}
     </div>
   )

@@ -141,50 +141,77 @@ const DOCS_CONFIG = {
 
 ```
 markdown-viewer/
-├── css/
-│   └── styles.css      # Custom CSS styles
-├── libs/
-│   ├── marked.min.js   # Local markdown parser
-│   └── highlight.js/   # Local syntax highlighting
-├── scripts/
-│   └── script.js       # Main application logic
-├── docs/
-│   └── example.md      # Example documentation
-├── index.html          # Main HTML file (includes config)
-├── vercel.json         # Vercel deployment config
-├── package.json        # Scripts only (no dependencies!)
-└── README.md           # This file
+├── src/
+│   ├── components/
+│   │   ├── Sidebar.jsx         # File navigation sidebar
+│   │   ├── Content.jsx         # Main content container
+│   │   ├── MarkdownEditor.jsx  # Rich markdown editor (EasyMDE)
+│   │   ├── MarkdownViewer.jsx  # Markdown renderer
+│   │   └── WelcomeScreen.jsx   # Welcome/upload screen
+│   ├── utils/
+│   │   ├── markdown.js         # Markdown utilities
+│   │   └── storage.js          # LocalStorage handling
+│   ├── App.jsx                 # Main app component
+│   ├── App.css                 # App-specific styles
+│   ├── index.css               # Global styles & Tailwind
+│   └── main.jsx                # React entry point
+├── .git/                        # Git repository
+├── dist/                        # Build output (production)
+├── public/                      # Static assets
+├── index.html                  # HTML entry point
+├── vite.config.js              # Vite build config
+├── tailwind.config.js          # Tailwind CSS config
+├── postcss.config.js           # PostCSS config
+├── package.json                # Dependencies & scripts
+├── vercel.json                 # Vercel deployment config
+└── README.md                   # This file
 ```
 
-**Note**: All JavaScript libraries (marked.js, highlight.js) are loaded from CDN - no local copies needed!
+**Key Features**:
+- React 18 - Modern UI framework
+- Tailwind CSS - Utility-first styling with professional color system
+- Vite - Lightning-fast build tool
+- EasyMDE - Rich markdown editor with live preview
+- Highlight.js - Syntax highlighting
+- Marked.js - Markdown parsing
 
 ## 🛠️ Development
 
 ### Prerequisites
 
-- Node.js >= 14.0.0 (only for local development server)
-- Or any static file server
-- Or just open `index.html` in your browser!
+- Node.js >= 16.0.0
+- npm or yarn
 
-### Setup
-
-No setup required! Just clone and run:
+### Setup & Commands
 
 ```bash
-git clone <repository-url>
-cd markdown-viewer
-npm run serve    # Or open index.html directly
+# Install dependencies
+npm install
+
+# Start development server (hot reload at http://localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm preview
 ```
 
 ## 📦 Dependencies
 
-All dependencies are loaded locally with fallback to CDN:
+**Runtime**:
+- **React 18** - UI framework
+- **EasyMDE** - Rich markdown editor with toolbar & live preview
+- **Marked** - Fast markdown parser
+- **Highlight.js** - Syntax highlighting
+- **React Icons** - Icon library
 
-- **marked** (v17.0.1): Fast markdown parser - from [jsDelivr](https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.min.js)
-- **highlight.js** (v11.11.1): Syntax highlighting - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js)
-- **github-dark theme**: Syntax highlighting theme - from [cdnjs](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css)
-
-**Zero npm dependencies!** All libraries are included locally - works fully offline, no build process required!
+**Development**:
+- **Vite** - Build tool & dev server
+- **Tailwind CSS** - Utility-first CSS framework
+- **PostCSS** - CSS processing
+- **Autoprefixer** - Browser prefix handling
 
 ## 📄 License
 
