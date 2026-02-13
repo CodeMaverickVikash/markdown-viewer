@@ -187,8 +187,9 @@ function addHeadingIds(html) {
 // Create table of contents
 function createTableOfContents(headings) {
     if (headings.length === 0) return '';
-
-    let tocHTML = '<nav class="table-of-contents"><h3>Contents</h3><ul>';
+    let tocHTML = '<nav class="table-of-contents"><h3>Contents</h3>' +
+        '<div class="toc-search-wrap"><input type="search" id="toc-search" placeholder="Search contents..." aria-label="Search contents"></div>' +
+        '<ul class="toc-list">';
     let currentLevel = 0;
     const openLists = [];
 
@@ -268,6 +269,56 @@ function loadFullFile(fileId) {
             }
         });
     });
+
+    // TOC search/filter behavior
+    const tocSearch = document.getElementById('toc-search');
+    if (tocSearch) {
+        const tocListItems = Array.from(document.querySelectorAll('.table-of-contents .toc-list li'));
+
+        function applyFilter() {
+            const q = tocSearch.value.trim().toLowerCase();
+            tocListItems.forEach(li => {
+                const text = li.textContent.trim().toLowerCase();
+                if (q === '' || text.indexOf(q) !== -1) {
+                    li.style.display = '';
+                } else {
+                    li.style.display = 'none';
+                }
+            });
+        }
+
+        tocSearch.addEventListener('input', applyFilter);
+
+        // Keyboard navigation inside TOC search: ArrowDown/ArrowUp to move, Enter to activate
+        tocSearch.addEventListener('keydown', (ev) => {
+            const visibleLinks = Array.from(document.querySelectorAll('.table-of-contents .toc-list li'))
+                .filter(li => li.style.display !== 'none')
+                .map(li => li.querySelector('.toc-link'))
+                .filter(Boolean);
+
+            if (visibleLinks.length === 0) return;
+
+            const active = document.activeElement;
+            let idx = visibleLinks.indexOf(active);
+
+            if (ev.key === 'ArrowDown') {
+                ev.preventDefault();
+                const next = visibleLinks[Math.min(idx + 1, visibleLinks.length - 1)];
+                if (next) next.focus();
+            } else if (ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                const prev = visibleLinks[Math.max(idx - 1, 0)];
+                if (prev) prev.focus();
+            }
+        });
+
+        // Allow Enter on focused link to trigger scroll
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' && document.activeElement && document.activeElement.classList.contains('toc-link')) {
+                document.activeElement.click();
+            }
+        });
+    }
 
     // Scroll to top
     contentBody.scrollTop = 0;
