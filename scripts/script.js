@@ -376,13 +376,20 @@ function loadFullFile(fileId) {
                 updateSelection(selectedIndex < 0 ? 0 : selectedIndex - 1);
             } else if (ev.key === 'Enter') {
                 ev.preventDefault();
-                // Advance selection to the next match (wrap around). Do not activate/click.
                 if (!matches || matches.length === 0) {
                     matches = getMatches(tocSearch.value);
                 }
                 if (!matches || matches.length === 0) return;
-                const next = (selectedIndex < 0) ? 0 : (selectedIndex + 1) % matches.length;
-                updateSelection(next);
+
+                if (ev.shiftKey) {
+                    // Move to previous match (wrap around)
+                    const prev = (selectedIndex <= 0) ? matches.length - 1 : selectedIndex - 1;
+                    updateSelection(prev);
+                } else {
+                    // Advance selection to the next match (wrap around)
+                    const next = (selectedIndex < 0) ? 0 : (selectedIndex + 1) % matches.length;
+                    updateSelection(next);
+                }
             }
         });
     }
