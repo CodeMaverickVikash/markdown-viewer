@@ -267,6 +267,10 @@ function loadFullFile(fileId) {
                 target.classList.add('highlight');
                 setTimeout(() => target.classList.remove('highlight'), 2000);
             }
+            // Visually mark the clicked TOC item as selected
+            document.querySelectorAll('.table-of-contents .toc-list li').forEach(li => li.classList.remove('toc-selected'));
+            const li = link.closest('li');
+            if (li) li.classList.add('toc-selected');
         });
     });
 
