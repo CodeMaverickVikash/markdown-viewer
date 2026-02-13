@@ -4,66 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown Viewer</title>
-
+    
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <!-- Marked.js for Markdown parsing -->
-    <script src="libs/marked.min.js"></script>
-    <!-- Highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="libs/highlight.js/github-dark.min.css" id="highlight-theme">
-    <script src="libs/highlight.js/highlight.min.js"></script>
-    <script>
-        // Configuration
-        const DOCS_CONFIG = {
-            siteTitle: "Markdown Viewer",
-            siteSubtitle: "Interactive Markdown Viewer",
-            footerText: "© 2026 CodeMaravic. All rights reserved.",
-            footerLinks: [],
-            sections: [],
-            welcome: {
-                title: "Welcome to Markdown Viewer",
-                subtitle: "Upload your markdown files to get started",
-                quickLinks: [],
-                stats: []
-            },
-            showFileNameInNav: false,
-            syntaxTheme: "github-dark"
-        };
-    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header" id="sidebar-header">
-                <h1>
-                    <img src="favicon.svg" alt="📚" class="header-logo">
-                    Markdown Viewer
-                </h1>
-                <div class="header-actions">
-                    <input type="file" id="header-file-input" accept=".md,.markdown" multiple style="display: none;">
-                    <button id="header-upload-btn" class="header-upload-btn" title="Upload markdown files">📤 Upload Files</button>
-                </div>
-            </div>
-            <nav class="sidebar-nav" id="sidebar-nav"></nav>
-            <div class="sidebar-footer" id="sidebar-footer">
-                <p>© 2026 CodeMaravic. All rights reserved.</p>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="content">
-            <button id="toggle-sidebar" class="toggle-btn">☰</button>
-
-            <!-- Content Body -->
-            <div class="content-body" id="content-body"></div>
-
-            <button id="scroll-top" class="scroll-top-btn">↑</button>
-        </main>
-    </div>
-
-    <script src="scripts/script.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
 

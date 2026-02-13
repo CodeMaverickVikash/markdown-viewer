@@ -1,19 +1,19 @@
 # 📚 Markdown Viewer
 
-A **pure static** interactive markdown documentation viewer with **zero npm dependencies**. All libraries are loaded from CDN. Perfect for deploying on Vercel, Netlify, or any static hosting platform.
+A modern **React-based** interactive markdown documentation viewer with **edit mode** and **export functionality**. Built with React, Vite, and deployed as a static site.
 
 ## ✨ Features
 
 - **📁 File Upload**: Drag-and-drop or click to upload markdown (.md) files
 - **💾 LocalStorage Persistence**: Uploaded files are saved in browser localStorage
-- **📚 Dynamic Navigation**: Auto-generates sidebar navigation from markdown headings (all heading levels)
-- **🔍 Search**: Filter topics in real-time
+- **✏️ Edit Mode**: Edit markdown files directly in the browser
+- **📥 Export**: Download edited files as .md
+- **📚 Dynamic Navigation**: Auto-generates sidebar navigation from markdown headings
+- **🔍 Search**: Filter files in real-time
 - **📱 Responsive Design**: Mobile-friendly with collapsible sidebar
 - **🎨 Syntax Highlighting**: Code blocks highlighted using highlight.js
-- **⚙️ Configurable**: Customize in HTML script tag (site title, sections, welcome screen, etc.)
-- **🌐 100% Static**: No server required - pure HTML/CSS/JavaScript
-- **📦 Zero npm Dependencies**: All libraries loaded from CDN
-- **🚀 Zero Build Process**: No build step required - deploy directly
+- **⚡ Fast**: Built with Vite for lightning-fast development and optimized production builds
+- **🌐 100% Static**: Deploys as static files - no server required
 
 ## 🚀 Quick Start
 
@@ -22,12 +22,18 @@ A **pure static** interactive markdown documentation viewer with **zero npm depe
 ```bash
 git clone <repository-url>
 cd markdown-viewer
-npm run serve    # Start local server
+npm install      # Install dependencies
+npm run dev      # Start development server
 ```
 
-Then open http://localhost:3000 in your browser.
+Then open http://localhost:5173 in your browser.
 
-**Note**: No `npm install` or build step needed! Just open `index.html` in your browser or use any static server.
+### Build for Production
+
+```bash
+npm run build    # Build for production
+npm run preview  # Preview production build
+```
 
 ## 🌐 Deploy to Vercel
 
@@ -37,17 +43,13 @@ Deploy your markdown viewer to Vercel with one click:
 
 ### How It Works
 
-This is a pure static site with **zero build process**:
-1. **All dependencies loaded from CDN**:
-   - `marked.js` (v17.0.1) from jsDelivr
-   - `highlight.js` (v11.11.1) from cdnjs
-   - `github-dark.min.css` theme from cdnjs
-2. **No build step required** - Deploy directly to Vercel
-3. **Instant deployment** - Just push to Git and Vercel deploys automatically
+1. **Vite builds the React app** to static files in the `dist/` folder
+2. **Vercel serves the static files** with optimized caching
+3. **All routes redirect to index.html** for client-side routing
 
 ### Manual Deployment
 
-1. **Install Vercel CLI** (optional):
+1. **Install Vercel CLI**:
    ```bash
    npm install -g vercel
    ```

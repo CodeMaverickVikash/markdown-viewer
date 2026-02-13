@@ -1,8 +1,40 @@
 # Dependencies
 node_modules/
 
-# Build output
+# Dependencies
+node_modules/
+
+# Build output (Vercel will build this)
+dist/
 public/
 
-# Lock file
-/package-lock.json
+# Vite
+.vite/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Old vanilla JS version
+index-vanilla.html
+
+# Vercel
+.vercel
