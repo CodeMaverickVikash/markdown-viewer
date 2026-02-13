@@ -35,7 +35,7 @@ function Content({ file, onFileUpdate, onToggleSidebar, sidebarVisible }) {
       {/* Sidebar Toggle Button */}
       {!file && (
         <button
-          className="flex items-center justify-center border border-gray-300 cursor-pointer text-gray-700 transition-all duration-200 p-2.5 w-10 h-10 rounded-lg fixed top-4 left-4 z-50 bg-white shadow-sm hover:bg-gray-50 hover:border-indigo-500 active:scale-95"
+          className={`flex items-center justify-center border border-gray-300 cursor-pointer text-gray-700 transition-all duration-200 p-2.5 w-10 h-10 rounded-lg fixed top-4 z-50 bg-white shadow-sm hover:bg-gray-50 hover:border-indigo-500 active:scale-95 ${sidebarVisible ? 'left-85' : 'left-4'}`}
           onClick={onToggleSidebar}
           title={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >

@@ -3,24 +3,12 @@ import { IoCloudUpload, IoCreate, IoDownload, IoBook, IoDocument, IoCode, IoSpar
 function WelcomeScreen() {
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50 relative">
-      <div className="max-w-5xl mx-auto px-6 py-16">
+      <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-indigo-500 rounded-xl flex items-center justify-center shadow-md">
-              <IoBook className="w-11 h-11 text-white" />
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium mb-4">
-            <IoSparkles className="w-3.5 h-3.5" />
-            Professional Documentation Tool
-          </div>
-          <h1 className="text-5xl md:text-6xl mb-4 text-gray-900 font-bold tracking-tight">
+        <div className="text-center mb-13">
+          <h1 className="text-1xl md:text-3xl mb-4 text-gray-900 font-bold tracking-tight">
             Markdown Viewer
           </h1>
-          <p className="text-lg text-gray-600 mb-3 leading-relaxed max-w-2xl mx-auto">
-            A clean, professional markdown documentation viewer
-          </p>
           <p className="text-sm text-gray-500 leading-relaxed max-w-xl mx-auto">
             Upload, edit, and preview your markdown files with ease
           </p>
@@ -113,14 +101,6 @@ function WelcomeScreen() {
                 <p className="text-sm text-gray-600 leading-relaxed">Files saved locally in your browser</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="text-center mt-12">
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white rounded-lg font-medium shadow-sm hover:bg-indigo-600 transition-all duration-200 cursor-default">
-            <IoSparkles className="w-4 h-4" />
-            Get started by uploading your first file
           </div>
         </div>
       </div>

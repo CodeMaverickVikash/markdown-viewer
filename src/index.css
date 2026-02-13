@@ -5,7 +5,7 @@
 
 /* Custom markdown content styles using Tailwind @apply */
 .markdown-content {
-  @apply text-base leading-relaxed text-neutral-800 max-w-4xl mx-auto;
+  @apply text-base leading-relaxed text-neutral-800;
 }
 
 .markdown-content h1,
