@@ -207,7 +207,7 @@ function createTableOfContents(headings) {
             currentLevel--;
         }
 
-        tocHTML += `<li><a href="#${slug}" class="toc-link">${heading.title}</a></li>`;
+        tocHTML += `<li title="${heading.title}"><a href="#${slug}" class="toc-link">${heading.title}</a></li>`;
     });
 
     // Close remaining open lists
@@ -500,6 +500,7 @@ function addUploadedFilesToSidebar(files) {
         // Create file item with remove button
         const fileLi = document.createElement('li');
         fileLi.className = 'uploaded-file-item';
+        fileLi.title = file.name;
         fileLi.dataset.fileId = file.id;
         fileLi.innerHTML = `
             <span class="file-name">📄 ${file.name}</span>

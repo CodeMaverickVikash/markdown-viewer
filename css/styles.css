@@ -1021,3 +1021,15 @@ h6.highlight {
     }
 }
 
+.uploaded-file-item .file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table-of-contents .toc-link {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
