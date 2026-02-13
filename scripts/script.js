@@ -277,45 +277,112 @@ function loadFullFile(fileId) {
 
         function applyFilter() {
             const q = tocSearch.value.trim().toLowerCase();
-            tocListItems.forEach(li => {
+            if (q === '') return;
+
+            // Find first matching TOC item and scroll to its heading
+            const match = tocListItems.find(li => {
                 const text = li.textContent.trim().toLowerCase();
-                if (q === '' || text.indexOf(q) !== -1) {
-                    li.style.display = '';
-                } else {
-                    li.style.display = 'none';
-                }
+                return text.indexOf(q) !== -1;
             });
+
+            if (match) {
+                const a = match.querySelector('.toc-link');
+                if (a) {
+                    const href = a.getAttribute('href');
+                    const headingId = href && href.startsWith('#') ? href.substring(1) : href;
+                    const target = document.getElementById(headingId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        target.classList.add('highlight');
+                        setTimeout(() => target.classList.remove('highlight'), 2000);
+                    }
+                }
+            }
         }
 
         tocSearch.addEventListener('input', applyFilter);
 
-        // Keyboard navigation inside TOC search: ArrowDown/ArrowUp to move, Enter to activate
-        tocSearch.addEventListener('keydown', (ev) => {
-            const visibleLinks = Array.from(document.querySelectorAll('.table-of-contents .toc-list li'))
-                .filter(li => li.style.display !== 'none')
-                .map(li => li.querySelector('.toc-link'))
-                .filter(Boolean);
+        // Manage matches + selection while keeping input focused
+        let matches = [];
+        let selectedIndex = -1;
 
-            if (visibleLinks.length === 0) return;
+        function getMatches(q) {
+            const term = q.trim().toLowerCase();
+            if (!term) return [];
+            return tocListItems.filter(li => li.textContent.trim().toLowerCase().indexOf(term) !== -1);
+        }
 
-            const active = document.activeElement;
-            let idx = visibleLinks.indexOf(active);
+        function clearSelection() {
+            selectedIndex = -1;
+            tocListItems.forEach(li => li.classList.remove('toc-selected'));
+        }
 
-            if (ev.key === 'ArrowDown') {
-                ev.preventDefault();
-                const next = visibleLinks[Math.min(idx + 1, visibleLinks.length - 1)];
-                if (next) next.focus();
-            } else if (ev.key === 'ArrowUp') {
-                ev.preventDefault();
-                const prev = visibleLinks[Math.max(idx - 1, 0)];
-                if (prev) prev.focus();
+        function updateSelection(idx) {
+            // clamp
+            if (!matches || matches.length === 0) {
+                clearSelection();
+                return;
+            }
+            selectedIndex = Math.max(0, Math.min(idx, matches.length - 1));
+            // clear others
+            tocListItems.forEach(li => li.classList.remove('toc-selected'));
+            const li = matches[selectedIndex];
+            if (!li) return;
+            li.classList.add('toc-selected');
+
+            // Scroll the heading into view and slightly highlight it
+            const a = li.querySelector('.toc-link');
+            if (a) {
+                const href = a.getAttribute('href');
+                const headingId = href && href.startsWith('#') ? href.substring(1) : href;
+                const target = document.getElementById(headingId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    target.classList.add('highlight');
+                    setTimeout(() => target.classList.remove('highlight'), 2000);
+                }
+            }
+
+            // Ensure the selected TOC item is visible inside the TOC scroll container
+            li.scrollIntoView({ block: 'nearest' });
+        }
+
+        tocSearch.addEventListener('input', () => {
+            const q = tocSearch.value;
+            if (!q || q.trim() === '') {
+                matches = [];
+                clearSelection();
+                return;
+            }
+
+            matches = getMatches(q);
+            if (matches.length > 0) {
+                updateSelection(0);
+            } else {
+                clearSelection();
             }
         });
 
-        // Allow Enter on focused link to trigger scroll
-        document.addEventListener('keydown', (ev) => {
-            if (ev.key === 'Enter' && document.activeElement && document.activeElement.classList.contains('toc-link')) {
-                document.activeElement.click();
+        tocSearch.addEventListener('keydown', (ev) => {
+            if (ev.key === 'ArrowDown') {
+                ev.preventDefault();
+                if (matches.length === 0) matches = getMatches(tocSearch.value);
+                if (matches.length === 0) return;
+                updateSelection(selectedIndex < 0 ? 0 : selectedIndex + 1);
+            } else if (ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                if (matches.length === 0) matches = getMatches(tocSearch.value);
+                if (matches.length === 0) return;
+                updateSelection(selectedIndex < 0 ? 0 : selectedIndex - 1);
+            } else if (ev.key === 'Enter') {
+                ev.preventDefault();
+                // Advance selection to the next match (wrap around). Do not activate/click.
+                if (!matches || matches.length === 0) {
+                    matches = getMatches(tocSearch.value);
+                }
+                if (!matches || matches.length === 0) return;
+                const next = (selectedIndex < 0) ? 0 : (selectedIndex + 1) % matches.length;
+                updateSelection(next);
             }
         });
     }
