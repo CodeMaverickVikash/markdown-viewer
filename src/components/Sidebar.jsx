@@ -131,7 +131,7 @@ function Sidebar({
                         }`}>{file.name}</span>
                       </span>
                       <button
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 text-red-600 rounded-md transition-all duration-200 shrink-0"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 text-red-600 rounded-md transition-all duration-200 shrink-0 cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation()
                           onFileRemove(file.id)

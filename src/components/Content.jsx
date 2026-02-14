@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { IoMenu, IoCreate, IoDownload, IoSave, IoClose, IoChevronUp, IoDocument } from 'react-icons/io5'
 import MarkdownViewer from './MarkdownViewer'
 import MarkdownEditor from './MarkdownEditor'
@@ -8,6 +8,7 @@ import { downloadMarkdown } from '../utils/markdown'
 function Content({ file, onFileUpdate, onToggleSidebar, sidebarVisible }) {
   const [isEditMode, setIsEditMode] = useState(false)
   const [editContent, setEditContent] = useState('')
+  const markdownViewerRef = useRef(null);
 
   const handleEdit = () => {
     setEditContent(file.content)
@@ -28,6 +29,10 @@ function Content({ file, onFileUpdate, onToggleSidebar, sidebarVisible }) {
     if (file) {
       downloadMarkdown(file.name, file.content)
     }
+  }
+
+  const scrollToTop = () => {
+    markdownViewerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -110,13 +115,13 @@ function Content({ file, onFileUpdate, onToggleSidebar, sidebarVisible }) {
               onChange={setEditContent}
             />
           ) : (
-            <MarkdownViewer content={file.content} />
+            <MarkdownViewer content={file.content} markdownViewerRef={markdownViewerRef} />
           )}
 
           {/* Scroll to Top Button - Only show when file is loaded */}
           <button
             className="fixed bottom-8 right-8 w-12 h-12 bg-indigo-500 text-white border-none rounded-lg cursor-pointer flex items-center justify-center shadow-lg transition-all duration-200 z-50 hover:bg-indigo-600 hover:shadow-xl active:scale-95"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={scrollToTop}
             title="Scroll to top"
           >
             <IoChevronUp className="w-6 h-6" />
