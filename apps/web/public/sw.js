@@ -1,5 +1,5 @@
-const CACHE_NAME = 'mypartner-portal-v2'
-const STATIC_CACHE_NAME = 'mypartner-portal-static-v2'
+const CACHE_NAME = 'mypartner-portal-v3'
+const STATIC_CACHE_NAME = 'mypartner-portal-static-v3'
 
 const APP_SHELL = [
   '/',
@@ -47,6 +47,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
+  if (url.pathname.startsWith('/_next/')) return
+
   // Never cache API responses. Notes sync and conflict handling must see the network.
   if (url.pathname.startsWith('/api/')) return
 
@@ -56,7 +58,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (
-    url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/assets/') ||
     url.pathname === '/favicon.svg' ||

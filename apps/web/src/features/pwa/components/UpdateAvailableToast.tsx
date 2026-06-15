@@ -7,6 +7,35 @@ export default function UpdateAvailableToast() {
 
     let isMounted = true
 
+    if (process.env.NODE_ENV !== 'production') {
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(
+          registrations
+            .filter((registration) => registration.active?.scriptURL.endsWith('/sw.js'))
+            .map((registration) => registration.unregister()),
+        ))
+        .catch((error) => {
+          console.error('Service worker cleanup failed:', error)
+        })
+
+      if ('caches' in window) {
+        void caches.keys()
+          .then((keys) => Promise.all(
+            keys
+              .filter((key) => key.startsWith('mypartner-portal'))
+              .map((key) => caches.delete(key)),
+          ))
+          .catch((error) => {
+            console.error('Service worker cache cleanup failed:', error)
+          })
+      }
+
+      return () => {
+        isMounted = false
+      }
+    }
+
     const showUpdateToast = (registration: ServiceWorkerRegistration) => {
       toast(
         () => (
