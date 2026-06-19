@@ -5,6 +5,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Clock,
+  CloudUpload,
   Copy,
   FileText,
   LayoutGrid,
@@ -19,6 +20,7 @@ import {
   Save,
   Search,
   Share2,
+  Table2,
   Trash2,
   Wifi,
   WifiOff,
@@ -30,6 +32,7 @@ import { cx } from '@mypartner/common'
 import { getApiUrl } from '@mypartner/common'
 import { MarkdownPreviewEditor } from '@mypartner/markdown-editor'
 import type { LocalNote, NoteColor, NoteShareMode, SyncStatus } from '../types'
+import NoteTable from './NoteTable'
 import { deleteNote as idbDelete, getNote, getVisibleNotes, saveNote } from '../lib/idb'
 import { pullServerNotes, syncPendingNotes } from '../lib/sync'
 
@@ -62,6 +65,18 @@ const formatDate = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   }).format(new Date(value))
+
+const formatRelativeDate = (value: string) => {
+  const diffMs = Date.now() - new Date(value).getTime()
+  const mins = diffMs / 60000
+  const hours = mins / 60
+  const days = hours / 24
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${Math.floor(mins)}m ago`
+  if (hours < 24) return `${Math.floor(hours)}h ago`
+  if (days < 7) return new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(new Date(value))
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(value))
+}
 
 const stripHtml = (html: string) =>
   html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
@@ -141,7 +156,7 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [mobilePane, setMobilePane] = useState<'list' | 'editor'>('list')
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'table'>('list')
   const [hideEditor, setHideEditor] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window === 'undefined') return 288
@@ -157,6 +172,9 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
   const [savingNoteIds, setSavingNoteIds] = useState<Set<string>>(() => new Set())
   const [shareNoteId, setShareNoteId] = useState<string | null>(null)
   const [shareBusy, setShareBusy] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [pinAnimId, setPinAnimId] = useState<string | null>(null)
+  const [isSavingAll, setIsSavingAll] = useState(false)
 
   // Ref so callbacks can read current notes without being recreated on every render
   const notesRef = useRef<LocalNote[]>([])
@@ -207,6 +225,7 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
       setNotes(nextNotes)
       setDirtyNoteIds(new Set(previews.map(note => note.localId)))
       setActiveNoteId(nextNotes[0]?.localId ?? null)
+      setIsLoading(false)
     })
 
     if (navigator.onLine && !cancelled) void runSync()
@@ -455,6 +474,29 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
     }
   }, [activeNoteId, discardIfEmpty, ownerEmail, refreshFromIdb, runSync])
 
+  const saveAllNotes = useCallback(async () => {
+    const dirtyIds = [...dirtyNoteIdsRef.current]
+    if (dirtyIds.length === 0) return
+    setIsSavingAll(true)
+    try {
+      for (const localId of dirtyIds) {
+        const note = notesRef.current.find(n => n.localId === localId)
+          ?? (draftNoteRef.current?.localId === localId ? draftNoteRef.current : null)
+        if (!note || !noteHasContent(note)) continue
+        await saveNote(note)
+        removeUnsavedPreview(ownerEmail, localId)
+        setDirtyNoteIds(curr => { const next = new Set(curr); next.delete(localId); return next })
+      }
+      if (navigator.onLine) await runSync()
+      toast.success(`${dirtyIds.length} note${dirtyIds.length !== 1 ? 's' : ''} synced`)
+    } catch {
+      toast.error('Could not sync all notes')
+      void refreshFromIdb()
+    } finally {
+      setIsSavingAll(false)
+    }
+  }, [ownerEmail, refreshFromIdb, runSync])
+
   const persistNoteForSharing = useCallback(async (note: LocalNote) => {
     if (!noteHasContent(note)) throw new Error('Add content before sharing')
     await saveNote(note)
@@ -559,13 +601,13 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
     toast.success('Preview changes discarded')
   }, [activeNoteId, ownerEmail])
 
-  const handleDelete = useCallback(async () => {
-    const note = notesRef.current.find(n => n.localId === activeNoteId)
-      ?? (draftNoteRef.current?.localId === activeNoteId ? draftNoteRef.current : null)
+  const deleteNoteById = useCallback(async (localId: string) => {
+    const note = notesRef.current.find(n => n.localId === localId)
+      ?? (draftNoteRef.current?.localId === localId ? draftNoteRef.current : null)
     if (!note) return
 
-    const localId = note.localId
     if (draftNoteRef.current?.localId === localId) {
+      draftNoteRef.current = null
       setDraftNote(null)
       removeUnsavedPreview(ownerEmail, localId)
       setDirtyNoteIds(curr => {
@@ -573,16 +615,15 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
         next.delete(localId)
         return next
       })
-      setActiveNoteId(notesRef.current[0]?.localId ?? null)
+      setActiveNoteId(prev => (prev === localId ? (notesRef.current[0]?.localId ?? null) : prev))
       return
     }
 
-    // Optimistically remove from UI
-    setNotes(curr => {
-      const next = curr.filter(n => n.localId !== localId)
-      setActiveNoteId(next[0]?.localId ?? null)
-      return next
-    })
+    // Optimistically remove from UI; keep active note unless it was the deleted one
+    const nextNotes = notesRef.current.filter(n => n.localId !== localId)
+    notesRef.current = nextNotes
+    setNotes(nextNotes)
+    setActiveNoteId(prev => (prev === localId ? (nextNotes[0]?.localId ?? null) : prev))
     removeUnsavedPreview(ownerEmail, localId)
     setDirtyNoteIds(curr => {
       const next = new Set(curr)
@@ -607,7 +648,11 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
       })
       void runSync()
     }
-  }, [activeNoteId, ownerEmail, refreshFromIdb, runSync])
+  }, [ownerEmail, refreshFromIdb, runSync])
+
+  const handleDelete = useCallback(async () => {
+    if (activeNoteId) await deleteNoteById(activeNoteId)
+  }, [activeNoteId, deleteNoteById])
 
   const unsavedCount = dirtyNoteIds.size
   const pendingCount = notes.filter(n => n.syncStatus === 'pending' || n.syncStatus === 'syncing').length
@@ -658,21 +703,46 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold text-ink-1 uppercase tracking-wider">Notes</h1>
             <div className="flex items-center gap-1.5 mt-0.5">
-              {isOffline
-                ? <WifiOff className="h-3 w-3 text-ink-3 shrink-0" />
-                : <Wifi className="h-3 w-3 text-forest shrink-0" />}
+              {isOffline ? (
+                <WifiOff className="h-3 w-3 text-ink-3 shrink-0" />
+              ) : isSyncing ? (
+                <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-forest opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-forest" />
+                </span>
+              ) : (
+                <Wifi className="h-3 w-3 text-forest shrink-0" />
+              )}
               <p className="text-[11px] text-ink-3">{statusLabel}</p>
             </div>
           </div>
+          {unsavedCount > 0 && (
+            <button
+              type="button"
+              onClick={saveAllNotes}
+              disabled={isSavingAll || isSyncing || isOffline}
+              title={`Sync ${unsavedCount} unsaved change${unsavedCount !== 1 ? 's' : ''}`}
+              className="relative flex h-7 w-7 items-center justify-center rounded text-forest transition hover:bg-forest/10 active:scale-95 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSavingAll
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <CloudUpload className="h-3.5 w-3.5" />}
+              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-forest text-[9px] font-bold text-white leading-none">
+                {unsavedCount > 9 ? '9+' : unsavedCount}
+              </span>
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => setViewMode(v => v === 'list' ? 'grid' : 'list')}
-            title={viewMode === 'list' ? 'Thumb view' : 'List view'}
+            onClick={() => setViewMode(v => v === 'list' ? 'grid' : v === 'grid' ? 'table' : 'list')}
+            title={viewMode === 'list' ? 'Grid view' : viewMode === 'grid' ? 'Table view' : 'List view'}
             className="flex h-7 w-7 items-center justify-center rounded text-ink-3 transition hover:bg-surface-2 hover:text-ink-1 active:scale-95 shrink-0 cursor-pointer"
           >
             {viewMode === 'list'
               ? <LayoutGrid className="h-3.5 w-3.5" />
-              : <LayoutList className="h-3.5 w-3.5" />}
+              : viewMode === 'grid'
+                ? <Table2 className="h-3.5 w-3.5" />
+                : <LayoutList className="h-3.5 w-3.5" />}
           </button>
           <button
             type="button"
@@ -710,35 +780,63 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
 
         {/* Note list */}
         <div className="flex-1 overflow-y-auto px-2 pb-3 min-h-0">
-          {filteredNotes.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line p-8 text-center mt-2">
+          {isLoading ? (
+            <div className="space-y-0.5 pt-2">
+              {[0, 1, 2, 3].map(i => <NoteCardSkeleton key={i} />)}
+            </div>
+          ) : filteredNotes.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line p-8 text-center mt-2 animate-fade-in">
               <FileText className="h-5 w-5 text-ink-3" />
-              <span className="text-xs text-ink-3">No notes found</span>
+              <span className="text-xs text-ink-3">
+                {query ? 'No notes match your search' : 'No notes yet'}
+              </span>
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="text-[11px] font-medium text-forest hover:text-forest-strong transition-colors cursor-pointer"
+                >
+                  Clear search
+                </button>
+              )}
             </div>
           ) : viewMode === 'grid' ? (
-            <div className={cx('grid gap-2 pt-2', hideEditor ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2')}>
-              {filteredNotes.map(note => (
+            <div key="grid" className={cx('grid gap-2 pt-2 animate-fade-in', hideEditor ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2')}>
+              {filteredNotes.map((note, i) => (
                 <NoteThumb
                   key={note.localId}
                   note={note}
                   active={note.localId === activeNoteId}
                   dirty={dirtyNoteIds.has(note.localId)}
                   onClick={() => selectNote(note.localId)}
+                  index={i}
                 />
               ))}
             </div>
+          ) : viewMode === 'table' ? (
+            <NoteTable
+              key="table"
+              notes={filteredNotes}
+              activeNoteId={activeNoteId}
+              dirtyNoteIds={dirtyNoteIds}
+              onSelect={selectNote}
+              onTogglePin={(localId, pinned) => updateNote(localId, { pinned: !pinned })}
+              onDelete={deleteNoteById}
+              onAdd={addNote}
+            />
           ) : (
-            <>
+            <div key="list" className="animate-fade-in">
               {pinnedNotes.length > 0 && (
                 <>
                   <p className="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-3">Pinned</p>
-                  {pinnedNotes.map(note => (
+                  {pinnedNotes.map((note, i) => (
                     <NoteCard
                       key={note.localId}
                       note={note}
                       active={note.localId === activeNoteId}
                       dirty={dirtyNoteIds.has(note.localId)}
                       onClick={() => selectNote(note.localId)}
+                      index={i}
                     />
                   ))}
                 </>
@@ -746,20 +844,24 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
               {unpinnedNotes.length > 0 && (
                 <>
                   {pinnedNotes.length > 0 && (
-                    <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-3">All Notes</p>
+                    <div className="mt-2 mb-1 border-t border-line" />
                   )}
-                  {unpinnedNotes.map(note => (
+                  {pinnedNotes.length > 0 && (
+                    <p className="px-2 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-3">All Notes</p>
+                  )}
+                  {unpinnedNotes.map((note, i) => (
                     <NoteCard
                       key={note.localId}
                       note={note}
                       active={note.localId === activeNoteId}
                       dirty={dirtyNoteIds.has(note.localId)}
                       onClick={() => selectNote(note.localId)}
+                      index={pinnedNotes.length + i}
                     />
                   ))}
                 </>
               )}
-            </>
+            </div>
           )}
         </div>
       </aside>
@@ -835,14 +937,20 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
               {/* Pin toggle */}
               <button
                 type="button"
-                onClick={() => updateNote(activeNote.localId, { pinned: !activeNote.pinned })}
+                onClick={() => {
+                  updateNote(activeNote.localId, { pinned: !activeNote.pinned })
+                  setPinAnimId(activeNote.localId)
+                  setTimeout(() => setPinAnimId(null), 400)
+                }}
                 title={activeNote.pinned ? 'Unpin' : 'Pin note'}
                 className={cx(
                   'flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors hover:bg-forest/10 active:scale-95 cursor-pointer',
                   activeNote.pinned ? 'text-forest' : 'text-ink-3 hover:text-forest',
                 )}
               >
-                {activeNote.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                <span className={cx('flex items-center justify-center', pinAnimId === activeNote.localId && 'animate-pin-pop')}>
+                  {activeNote.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                </span>
               </button>
 
               {/* Save */}
@@ -1088,30 +1196,33 @@ function ShareDialog({
 }
 
 function NoteThumb({
-  note, active, dirty, onClick,
+  note, active, dirty, onClick, index,
 }: {
   note: LocalNote
   active: boolean
   dirty: boolean
   onClick: () => void
+  index: number
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cx(
-        'flex flex-col rounded-xl border text-left transition active:scale-[0.97] min-h-32.5 cursor-pointer',
+        'flex flex-col rounded-xl border text-left transition-all duration-150 h-36 cursor-pointer animate-note-in',
+        'hover:-translate-y-px hover:shadow-md active:scale-[0.97]',
         active
-          ? 'border-forest/30 bg-forest/5 shadow-sm'
-          : 'border-line bg-surface-1 hover:border-forest/20 hover:shadow-sm',
+          ? 'border-forest/30 bg-forest/5 shadow-sm ring-2 ring-forest/20'
+          : 'border-line bg-surface-1 hover:border-forest/20',
       )}
+      style={{ animationDelay: `${Math.min(index * 35, 250)}ms` }}
     >
       {/* Color strip */}
       <div
         className="h-1.5 w-full rounded-t-xl shrink-0"
         style={{ backgroundColor: accent[note.color] }}
       />
-      <div className="flex flex-1 flex-col gap-1 px-3 py-2.5 min-h-0">
+      <div className="flex flex-1 flex-col gap-1 px-3 py-2 min-h-0 overflow-hidden">
         <div className="flex items-start gap-1">
           <span className="flex-1 truncate text-[13px] font-semibold leading-snug text-ink-1">
             {note.body.trim().split('\n')[0].replace(/^#+\s*/, '').trim() || 'Untitled'}
@@ -1119,54 +1230,75 @@ function NoteThumb({
           {dirty && <UnsavedBadge />}
           {note.pinned && <Pin className="h-3 w-3 shrink-0 text-forest mt-0.5" />}
         </div>
-        <p className="line-clamp-3 text-[11px] leading-relaxed text-ink-3 flex-1">
+        <p className="line-clamp-2 text-[11px] leading-relaxed text-ink-3 flex-1">
           {stripHtml(note.body) || 'No content'}
         </p>
-        <p className="mt-auto text-[10px] text-ink-3 pt-1">{formatDate(note.updatedAt)}</p>
+        <p className="text-[10px] text-ink-3 shrink-0">{formatRelativeDate(note.updatedAt)}</p>
       </div>
     </button>
   )
 }
 
 function NoteCard({
-  note, active, dirty, onClick,
+  note, active, dirty, onClick, index,
 }: {
   note: LocalNote
   active: boolean
   dirty: boolean
   onClick: () => void
+  index: number
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cx(
-        'group w-full rounded-lg border px-3 py-2.5 text-left transition mb-0.5 cursor-pointer',
+        'group relative w-full rounded-lg border text-left transition-all duration-150 mb-0.5 cursor-pointer overflow-hidden',
+        'hover:-translate-y-px hover:shadow-sm animate-note-in',
         active
           ? 'border-forest/25 bg-forest/5 shadow-sm'
           : 'border-transparent hover:border-line hover:bg-surface-2',
       )}
+      style={{ animationDelay: `${Math.min(index * 35, 250)}ms` }}
     >
-      <div className="flex items-start gap-2.5">
-        <span
-          className="mt-1.25 h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: accent[note.color] }}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="flex-1 truncate text-sm font-semibold text-ink-1">
-              {note.body.trim().split('\n')[0].replace(/^#+\s*/, '').trim() || 'Untitled'}
-            </span>
-            {dirty && <UnsavedBadge />}
-            {note.pinned && <Pin className="h-3 w-3 shrink-0 text-forest" />}
-            {!dirty && <SyncBadge status={note.syncStatus} />}
-          </div>
-          <p className="truncate text-xs text-ink-3 leading-snug">
-            {stripHtml(note.body) || 'No content'}
-          </p>
-          <p className="mt-1 text-[10px] text-ink-3">{formatDate(note.updatedAt)}</p>
+      {/* Left accent bar — grows to full height on active */}
+      <span
+        className="absolute inset-y-0 left-0 w-0.75 rounded-l-lg origin-center transition-all duration-200"
+        style={{
+          backgroundColor: accent[note.color],
+          transform: `scaleY(${active ? 1 : 0.4})`,
+          opacity: active ? 1 : 0.5,
+        }}
+      />
+      <div className="flex flex-col gap-1 pl-4 pr-3 py-2.5">
+        <div className="flex items-center gap-1.5">
+          <span className="flex-1 truncate text-sm font-semibold text-ink-1">
+            {note.body.trim().split('\n')[0].replace(/^#+\s*/, '').trim() || 'Untitled'}
+          </span>
+          {dirty && <UnsavedBadge />}
+          {note.pinned && <Pin className="h-3 w-3 shrink-0 text-forest transition-transform group-hover:rotate-12" />}
+          {!dirty && <SyncBadge status={note.syncStatus} />}
         </div>
+        <p className="line-clamp-2 text-xs text-ink-3 leading-snug">
+          {stripHtml(note.body) || 'No content'}
+        </p>
+        <p className="text-[10px] text-ink-3">{formatRelativeDate(note.updatedAt)}</p>
       </div>
     </button>
+  )
+}
+
+
+function NoteCardSkeleton() {
+  return (
+    <div className="relative w-full rounded-lg border border-line mb-0.5 overflow-hidden pl-4 pr-3 py-2.5">
+      <span className="absolute inset-y-0 left-0 w-0.75 rounded-l-lg bg-surface-2" />
+      <div className="flex flex-col gap-2">
+        <div className="h-3.5 w-3/4 rounded-md animate-shimmer" />
+        <div className="h-2.5 w-full rounded-md animate-shimmer" />
+        <div className="h-2.5 w-1/2 rounded-md animate-shimmer" />
+        <div className="h-2 w-1/4 rounded-md animate-shimmer" />
+      </div>
+    </div>
   )
 }

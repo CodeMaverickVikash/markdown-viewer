@@ -5,11 +5,12 @@ import {
   Check,
   Code,
   Code2,
-  ChevronDown,
+  ChevronsUpDown,
   Columns3,
   Copy,
   Ellipsis,
   Eye,
+  GripVertical,
   Image,
   Link,
   List,
@@ -20,6 +21,7 @@ import {
   Rows3,
   SquareCheck,
   Strikethrough,
+  Superscript,
   Table2,
   Trash2,
   Undo2,
@@ -54,6 +56,7 @@ interface TableSelection {
   tableTop: number
   tableLeft: number
   tableWidth: number
+  tableBottom: number
   rowIndex: number
   colIndex: number
 }
@@ -454,11 +457,22 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
   const selectedCellRef = useRef<HTMLTableCellElement | null>(null)
   const tableToolbarRef = useRef<HTMLDivElement | null>(null)
   const [tableSelection, setTableSelection] = useState<TableSelection | null>(null)
+  const [rowRects, setRowRects] = useState<DOMRect[]>([])
+  const [colRects, setColRects] = useState<DOMRect[]>([])
+  const [dragRowIdx, setDragRowIdx] = useState<number | null>(null)
+  const [dragColIdx, setDragColIdx] = useState<number | null>(null)
+  const [dropRowAtIdx, setDropRowAtIdx] = useState<number | null>(null)
+  const [dropColAtIdx, setDropColAtIdx] = useState<number | null>(null)
 
-  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const [lightbox, setLightbox] = useState<{ images: { src: string; alt: string }[]; index: number } | null>(null)
 
   const openLightbox = (img: HTMLImageElement) => {
-    setLightbox({ src: img.src, alt: img.alt })
+    const viewer = markdownViewerRef.current
+    if (!viewer) return
+    const allImgs = Array.from(viewer.querySelectorAll<HTMLImageElement>('img'))
+    const images = allImgs.map(el => ({ src: el.src, alt: el.alt }))
+    const index = allImgs.indexOf(img)
+    setLightbox({ images, index: index < 0 ? 0 : index })
   }
 
   const getVisibleImageRect = (img: HTMLImageElement): ImageOverlayRect | null => {
@@ -489,6 +503,17 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
     if (selectedCellRef.current) selectedCellRef.current.classList.remove('table-cell-selected')
     selectedCellRef.current = null
     setTableSelection(null)
+    setRowRects([])
+    setColRects([])
+  }
+
+  const updateTableRects = () => {
+    const cell = selectedCellRef.current
+    const table = cell?.closest<HTMLTableElement>('table')
+    if (!table) { setRowRects([]); setColRects([]); return }
+    setRowRects(Array.from(table.rows).map(r => r.getBoundingClientRect()))
+    const firstRow = table.rows[0]
+    setColRects(firstRow ? Array.from(firstRow.cells).map(c => c.getBoundingClientRect()) : [])
   }
 
   const selectImage = (img: HTMLImageElement) => {
@@ -546,9 +571,11 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
       tableTop: containerRect.top,
       tableLeft: containerRect.left,
       tableWidth: containerRect.width,
+      tableBottom: containerRect.bottom,
       rowIndex: getCellRowIndex(cell),
       colIndex: getCellColumnIndex(cell)
     })
+    updateTableRects()
   }
 
   const updateSelectedTableCell = () => {
@@ -694,6 +721,108 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
     ;(wrapper ?? context.table).remove()
     syncContent()
     clearTableSelection()
+  }
+
+  const startTableRowDrag = (e: React.PointerEvent, rowIdx: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const context = getSelectedTableContext()
+    if (!context) return
+    const { table, colIndex } = context
+    setDragRowIdx(rowIdx)
+    const snapRects = Array.from(table.rows).map(r => r.getBoundingClientRect())
+    let pendingDrop: number | null = null
+
+    const computeDrop = (y: number): number | null => {
+      let drop = snapRects.length
+      for (let i = 0; i < snapRects.length; i++) {
+        if (i === rowIdx) continue
+        const rect = snapRects[i]
+        if (rect && y < rect.top + rect.height / 2) { drop = i; break }
+      }
+      return drop === rowIdx || drop === rowIdx + 1 ? null : drop
+    }
+
+    const onMove = (ev: PointerEvent) => {
+      const drop = computeDrop(ev.clientY)
+      if (drop !== pendingDrop) { pendingDrop = drop; setDropRowAtIdx(drop) }
+    }
+
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
+      const drop = pendingDrop
+      if (drop !== null) {
+        const rows = Array.from(table.rows)
+        const row = rows[rowIdx]
+        if (row) {
+          if (drop >= rows.length) rows[rows.length - 1]?.after(row)
+          else rows[drop]?.before(row)
+          syncContent()
+          updateTableRects()
+          const newIdx = drop > rowIdx ? drop - 1 : drop
+          const cell = table.rows[newIdx]?.cells[Math.min(colIndex, (table.rows[newIdx]?.cells.length ?? 1) - 1)] as HTMLTableCellElement | undefined
+          if (cell) selectTableCell(cell)
+        }
+      }
+      setDragRowIdx(null)
+      setDropRowAtIdx(null)
+    }
+
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+  }
+
+  const startTableColDrag = (e: React.PointerEvent, colIdx: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const context = getSelectedTableContext()
+    if (!context) return
+    const { table, row } = context
+    setDragColIdx(colIdx)
+    const firstRow = table.rows[0]
+    const snapRects = firstRow ? Array.from(firstRow.cells).map(c => c.getBoundingClientRect()) : []
+    let pendingDrop: number | null = null
+
+    const computeDrop = (x: number): number | null => {
+      let drop = snapRects.length
+      for (let i = 0; i < snapRects.length; i++) {
+        if (i === colIdx) continue
+        const rect = snapRects[i]
+        if (rect && x < rect.left + rect.width / 2) { drop = i; break }
+      }
+      return drop === colIdx || drop === colIdx + 1 ? null : drop
+    }
+
+    const onMove = (ev: PointerEvent) => {
+      const drop = computeDrop(ev.clientX)
+      if (drop !== pendingDrop) { pendingDrop = drop; setDropColAtIdx(drop) }
+    }
+
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
+      const drop = pendingDrop
+      if (drop !== null) {
+        Array.from(table.rows).forEach(tableRow => {
+          const cells = Array.from(tableRow.cells)
+          const cell = cells[colIdx]
+          if (!cell) return
+          if (drop >= cells.length) cells[cells.length - 1]?.after(cell)
+          else cells[drop]?.before(cell)
+        })
+        syncContent()
+        updateTableRects()
+        const newIdx = drop > colIdx ? drop - 1 : drop
+        const targetCell = row.cells[Math.min(newIdx, row.cells.length - 1)] as HTMLTableCellElement | undefined
+        if (targetCell) selectTableCell(targetCell)
+      }
+      setDragColIdx(null)
+      setDropColAtIdx(null)
+    }
+
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
   }
 
   const startColumnDragResize = (e: React.PointerEvent, cell: HTMLTableCellElement) => {
@@ -1229,18 +1358,20 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
     [
       { type: 'icon', icon: Link, label: 'Link', action: createLink },
       { type: 'icon', icon: Image, label: 'Image', action: insertImage }
+    ],
+    [
+      { type: 'icon', icon: Table2, label: 'Insert table', action: insertTable }
     ]
   ]
 
   const moreMenuItems: ToolbarItem[] = [
-    { type: 'icon', icon: Table2, label: 'Table', action: () => { insertTable(); setIsMenuOpen(false) } },
     { type: 'icon', icon: SquareCheck, label: 'Task List', action: () => { insertTaskList(); setIsMenuOpen(false) } },
     { type: 'icon', icon: Quote, label: 'Blockquote', action: () => { runCommand('formatBlock', 'blockquote'); setIsMenuOpen(false) } },
     { type: 'icon', icon: Code2, label: 'Code Block', action: () => { insertCodeBlock(); setIsMenuOpen(false) } },
     { type: 'icon', icon: Minus, label: 'Horizontal Rule', action: () => { runCommand('insertHorizontalRule'); setIsMenuOpen(false) } },
     { type: 'icon', icon: Strikethrough, label: 'Strikethrough', action: () => { runCommand('strikeThrough'); setIsMenuOpen(false) } },
-    { type: 'icon', icon: ChevronDown, label: 'Footnote', action: () => { insertFootnote(); setIsMenuOpen(false) } },
-    { type: 'icon', icon: ChevronDown, label: 'Collapsible Section', action: () => { insertCollapsible(); setIsMenuOpen(false) } }
+    { type: 'icon', icon: Superscript, label: 'Footnote', action: () => { insertFootnote(); setIsMenuOpen(false) } },
+    { type: 'icon', icon: ChevronsUpDown, label: 'Collapsible Section', action: () => { insertCollapsible(); setIsMenuOpen(false) } }
   ]
 
   const handleDeleteImage = () => {
@@ -1657,6 +1788,40 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
             void handleCopySelectedImage()
             return
           }
+          if (event.key === 'Tab') {
+            const cell = getCellFromSelection()
+            if (cell) {
+              event.preventDefault()
+              const table = cell.closest('table')
+              if (!table) return
+              const allCells = Array.from(table.querySelectorAll<HTMLTableCellElement>('th, td'))
+              const idx = allCells.indexOf(cell)
+              if (!event.shiftKey) {
+                if (idx < allCells.length - 1) {
+                  const nextCell = allCells[idx + 1]!
+                  const range = document.createRange()
+                  range.selectNodeContents(nextCell)
+                  range.collapse(false)
+                  window.getSelection()?.removeAllRanges()
+                  window.getSelection()?.addRange(range)
+                  saveSelection()
+                  selectTableCell(nextCell)
+                } else {
+                  insertTableRow('after')
+                }
+              } else if (idx > 0) {
+                const prevCell = allCells[idx - 1]!
+                const range = document.createRange()
+                range.selectNodeContents(prevCell)
+                range.collapse(false)
+                window.getSelection()?.removeAllRanges()
+                window.getSelection()?.addRange(range)
+                saveSelection()
+                selectTableCell(prevCell)
+              }
+              return
+            }
+          }
           if ((event.ctrlKey || event.metaKey) && ['b', 'i', 'z', 'y'].includes(event.key.toLowerCase())) {
             window.setTimeout(syncContent, 0)
           }
@@ -1678,7 +1843,7 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
             width: Math.min(tableSelection.tableWidth, window.innerWidth - 16),
             zIndex: 210
           }}
-          className="flex items-center gap-1 bg-surface-2 border border-line border-b-0 rounded-t-lg px-2 py-1.5 select-none text-xs overflow-x-auto"
+          className="flex items-center gap-1 bg-surface-2 border border-line border-b-0 rounded-t-lg px-2 py-1.5 select-none text-xs overflow-x-auto animate-appear"
         >
           {/* Context label */}
           <div className="flex items-center gap-1.5 pr-2 border-r border-line shrink-0">
@@ -1764,6 +1929,107 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
             </button>
           </div>
         </div>,
+        document.body
+      )}
+
+      {/* ── Row / Column DnD overlays ── */}
+      {tableSelection && editable && rowRects.length > 0 && createPortal(
+        <>
+          {/* Row grip handles — left edge of table, hidden while col-drag is active */}
+          {dragColIdx === null && rowRects.map((rect, idx) => (
+            <div
+              key={`rg-${idx}`}
+              style={{
+                position: 'fixed',
+                left: tableSelection.tableLeft - 20,
+                top: rect.top,
+                height: rect.height,
+                width: 16,
+                zIndex: 212,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: dragRowIdx === idx ? 'grabbing' : 'grab',
+                color: dragRowIdx === idx ? 'var(--color-forest)' : 'var(--color-ink-3)',
+                opacity: dragRowIdx === idx ? 1 : 0.35,
+                transition: 'opacity 0.1s, color 0.1s',
+              }}
+              onPointerEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.85'; (e.currentTarget as HTMLElement).style.color = 'var(--color-forest)' }}
+              onPointerLeave={e => { if (dragRowIdx !== idx) { (e.currentTarget as HTMLElement).style.opacity = '0.35'; (e.currentTarget as HTMLElement).style.color = 'var(--color-ink-3)' } }}
+              onPointerDown={e => startTableRowDrag(e, idx)}
+            >
+              <GripVertical style={{ width: 14, height: 14 }} />
+            </div>
+          ))}
+
+          {/* Column grip handles — top edge of each header cell, hidden while row-drag is active */}
+          {dragRowIdx === null && colRects.map((rect, idx) => (
+            <div
+              key={`cg-${idx}`}
+              style={{
+                position: 'fixed',
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: 10,
+                zIndex: 212,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: dragColIdx === idx ? 'grabbing' : 'grab',
+                opacity: dragColIdx === idx ? 1 : 0,
+                transition: 'opacity 0.1s',
+              }}
+              onPointerEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.7' }}
+              onPointerLeave={e => { if (dragColIdx !== idx) (e.currentTarget as HTMLElement).style.opacity = '0' }}
+              onPointerDown={e => startTableColDrag(e, idx)}
+            >
+              <div style={{ width: 20, height: 4, borderRadius: 9999, backgroundColor: dragColIdx === idx ? 'var(--color-forest)' : 'var(--color-ink-3)' }} />
+            </div>
+          ))}
+
+          {/* Row drop line */}
+          {dropRowAtIdx !== null && (() => {
+            const isAfterLast = dropRowAtIdx >= rowRects.length
+            const refRect = isAfterLast ? rowRects[rowRects.length - 1] : rowRects[dropRowAtIdx]
+            if (!refRect) return null
+            return (
+              <div style={{
+                position: 'fixed',
+                left: tableSelection.tableLeft,
+                width: tableSelection.tableWidth,
+                top: (isAfterLast ? refRect.bottom : refRect.top) - 1,
+                height: 2,
+                zIndex: 215,
+                background: 'var(--color-forest)',
+                borderRadius: 1,
+                pointerEvents: 'none',
+                boxShadow: '0 0 0 1px var(--color-forest)',
+              }} />
+            )
+          })()}
+
+          {/* Column drop line */}
+          {dropColAtIdx !== null && (() => {
+            const isAfterLast = dropColAtIdx >= colRects.length
+            const refRect = isAfterLast ? colRects[colRects.length - 1] : colRects[dropColAtIdx]
+            if (!refRect) return null
+            return (
+              <div style={{
+                position: 'fixed',
+                left: (isAfterLast ? refRect.right : refRect.left) - 1,
+                top: tableSelection.tableTop,
+                width: 2,
+                height: tableSelection.tableBottom - tableSelection.tableTop,
+                zIndex: 215,
+                background: 'var(--color-forest)',
+                borderRadius: 1,
+                pointerEvents: 'none',
+                boxShadow: '0 0 0 1px var(--color-forest)',
+              }} />
+            )
+          })()}
+        </>,
         document.body
       )}
 
@@ -1855,7 +2121,12 @@ function MarkdownViewer({ content, markdownViewerRef, onContentChange }: Markdow
       )}
 
       {lightbox && (
-        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+        <ImageLightbox
+          images={lightbox.images}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onNavigate={idx => setLightbox(prev => prev ? { ...prev, index: idx } : null)}
+        />
       )}
     </div>
   )
