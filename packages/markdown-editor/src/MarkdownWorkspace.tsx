@@ -175,7 +175,7 @@ function MarkdownWorkspace({ onNavigate, ownerEmail }: { onNavigate: (path: stri
     setFileModifiedTimes(prev => new Map(prev).set(fileId, newLastModified))
     const file = filesRef.current.get(fileId)
     if (file) {
-      toast.success(`File "${file.name}" was updated externally and has been reloaded.`, { duration: 4000, icon: 'Reloaded' })
+      // toast.success(`File "${file.name}" was updated externally and has been reloaded.`, { duration: 4000, icon: 'Reloaded' })
     }
   // filesRef is a stable ref — no deps needed
   // eslint-disable-next-line react-hooks/exhaustive-deps
