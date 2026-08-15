@@ -1,9 +1,11 @@
 import { useState, type ReactNode, type SyntheticEvent } from 'react'
+import Link from 'next/link'
 import {
   ArrowRight,
   BookOpenText,
   BriefcaseBusiness,
   CheckCircle2,
+  Database,
   Download,
   Loader2,
   LogOut,
@@ -18,7 +20,7 @@ import { toast } from '@mypartner/common/dependencies'
 import { useInstallPrompt } from '../../pwa/hooks/useInstallPrompt'
 
 export type ThemeMode = 'light' | 'dark'
-export type FeatureId = 'markdown' | 'notes' | 'portfolio'
+export type AuthenticatedFeatureId = 'notes' | 'backend'
 
 export interface AuthSession {
   name: string
@@ -40,20 +42,35 @@ interface PortalProps extends ShellProps {
   session: AuthSession
   children?: ReactNode
   onLogout: () => void
+  activeFeature: AuthenticatedFeatureId
+  onNavigate: (path: string) => void
 }
 
+interface AuthenticatedFeature {
+  id: AuthenticatedFeatureId
+  label: string
+  route: string
+  icon: LucideIcon
+}
+
+const authenticatedFeatures: AuthenticatedFeature[] = [
+  { id: 'notes', label: 'Notes', route: '/notes', icon: NotebookTabs },
+  { id: 'backend', label: 'Backend UI', route: '/backend', icon: Database },
+]
+
 interface FeatureRegistryItem {
-  id: FeatureId
+  id: string
   label: string
   tagline: string
   route: string
   icon: LucideIcon
 }
 
+// Kept for the legacy portal home component; public apps route outside authentication.
 export const featureRegistry: FeatureRegistryItem[] = [
-  { id: 'markdown', label: 'Markdown', tagline: 'Live editor with file sync',  route: '/portal/markdown', icon: BookOpenText },
-  { id: 'notes',    label: 'Notes',    tagline: 'Pinnable notes, offline-first', route: '/portal/notes',    icon: NotebookTabs },
-  { id: 'portfolio', label: 'Portfolio', tagline: 'Engineer profile and stack', route: '/portal/portfolio', icon: BriefcaseBusiness },
+  { id: 'markdown', label: 'Markdown', tagline: 'Local markdown editor', route: '/markdown', icon: BookOpenText },
+  { id: 'notes', label: 'Notes', tagline: 'Pinnable notes, offline-first', route: '/notes', icon: NotebookTabs },
+  { id: 'portfolio', label: 'Portfolio', tagline: 'Engineer profile and stack', route: '/portfolio', icon: BriefcaseBusiness },
 ]
 
 function BrandMark() {
@@ -165,6 +182,26 @@ export function MyPartnerLogin({ theme, onLogin, onToggleTheme }: LoginProps) {
               </li>
             ))}
           </ul>
+
+          <div className="mt-8">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">No sign-in required</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link
+                href="/markdown"
+                className="inline-flex items-center gap-2 rounded-lg border border-forest/30 bg-forest/5 px-4 py-2 text-sm font-semibold text-forest transition hover:bg-forest/10"
+              >
+                <BookOpenText className="h-4 w-4" />
+                Open Markdown Editor
+              </Link>
+              <Link
+                href="/portfolio"
+                className="inline-flex items-center gap-2 rounded-lg border border-forest/30 bg-forest/5 px-4 py-2 text-sm font-semibold text-forest transition hover:bg-forest/10"
+              >
+                <BriefcaseBusiness className="h-4 w-4" />
+                View Portfolio
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Login card */}
@@ -241,6 +278,8 @@ export function MyPartnerPortal({
   theme,
   onLogout,
   onToggleTheme,
+  activeFeature,
+  onNavigate,
 }: PortalProps) {
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-surface-0 max-lg:h-auto max-lg:min-h-screen">
@@ -265,12 +304,39 @@ export function MyPartnerPortal({
         </div>
       </header>
 
-      <section
-        className="flex min-h-0 flex-1 flex-col overflow-auto lg:overflow-hidden [&>.app-container]:flex-1 [&>.app-container]:min-h-0 [&>main]:flex-1 [&>main]:min-h-0"
-        aria-label="Feature workspace"
-      >
-        {children}
-      </section>
+      <div className="flex min-h-0 flex-1 overflow-hidden max-lg:flex-col">
+        <aside className="flex w-52 shrink-0 flex-col border-r border-line bg-surface-1 p-3 max-lg:w-full max-lg:border-r-0 max-lg:border-b">
+          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-ink-3">Apps</p>
+          <nav className="flex gap-1 max-lg:overflow-x-auto lg:flex-col" aria-label="Authenticated apps">
+            {authenticatedFeatures.map(feature => {
+              const Icon = feature.icon
+              const isActive = activeFeature === feature.id
+              return (
+                <button
+                  key={feature.id}
+                  type="button"
+                  onClick={() => onNavigate(feature.route)}
+                  className={`flex min-w-max items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition cursor-pointer ${
+                    isActive
+                      ? 'bg-forest text-white'
+                      : 'text-ink-2 hover:bg-surface-2 hover:text-ink-1'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {feature.label}
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
+
+        <section
+          className="flex min-h-0 flex-1 flex-col overflow-auto lg:overflow-hidden [&>.app-container]:flex-1 [&>.app-container]:min-h-0 [&>main]:flex-1 [&>main]:min-h-0"
+          aria-label="Feature workspace"
+        >
+          {children}
+        </section>
+      </div>
     </main>
   )
 }

@@ -1,4 +1,4 @@
-import { ChangeEvent, useMemo, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import {
   BookOpenText,
   Code2,
@@ -12,6 +12,7 @@ import {
 import techStackData from '../data/tech-stack.json'
 import type { Category, TechItem } from '../types'
 import { getDifficultyColor } from '../utils/utils'
+import { getApiUrl } from '@mypartner/common'
 
 const iconMap = {
   default: Code2,
@@ -36,8 +37,23 @@ const techStack = techStackData as TechItem[]
 const TechStack = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [techStack, setTechStack] = useState<TechItem[]>(() => techStackData as TechItem[])
 
-  const activeTechStack = useMemo(() => techStack.filter(tech => tech.isActive), [])
+  useEffect(() => {
+    const loadManagedSkills = async () => {
+      try {
+        const response = await fetch(getApiUrl('/api/portfolio/skills'))
+        if (!response.ok) return
+        const data = await response.json() as { skills?: TechItem[] }
+        if (data.skills && data.skills.length > 0) setTechStack(data.skills)
+      } catch {
+        // The bundled JSON remains a reliable public fallback until the management API is configured.
+      }
+    }
+    void loadManagedSkills()
+  }, [])
+
+  const activeTechStack = useMemo(() => techStack.filter(tech => tech.isActive), [techStack])
   const filteredTechnologies = activeTechStack.filter(tech => {
     const normalizedSearch = searchQuery.toLowerCase()
     const matchesCategory = selectedCategory === 'All' || tech.category === selectedCategory

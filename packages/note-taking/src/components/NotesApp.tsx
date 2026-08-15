@@ -38,7 +38,6 @@ import { pullServerNotes, syncPendingNotes } from '../lib/sync'
 
 interface NotesAppProps {
   ownerEmail: string
-  onNavigate: (path: string) => void
 }
 
 const colorOptions: NoteColor[] = ['mint', 'sky', 'coral', 'gold']
@@ -150,7 +149,7 @@ function UnsavedBadge() {
   )
 }
 
-export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
+export default function NotesApp({ ownerEmail }: NotesAppProps) {
   const [notes, setNotes] = useState<LocalNote[]>([])
   const [draftNote, setDraftNote] = useState<LocalNote | null>(null)
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null)
@@ -689,17 +688,6 @@ export default function NotesApp({ ownerEmail, onNavigate }: NotesAppProps) {
 
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-line shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              if (activeNoteId) discardIfEmpty(activeNoteId)
-              onNavigate('/portal/home')
-            }}
-            title="Back to home"
-            className="flex h-7 w-7 items-center justify-center rounded text-ink-3 transition hover:bg-surface-2 hover:text-ink-1 active:scale-95 shrink-0 cursor-pointer"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold text-ink-1 uppercase tracking-wider">Notes</h1>
             <div className="flex items-center gap-1.5 mt-0.5">

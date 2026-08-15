@@ -9,10 +9,10 @@ import {
   MyPartnerLogin,
   MyPartnerPortal,
   type AuthSession,
-  type FeatureId,
+  type AuthenticatedFeatureId,
   type ThemeMode
 } from './components/MyPartnerShell'
-import PortalHome from './components/PortalHome'
+import BackendConsole from './components/BackendConsole'
 import InstallPrompt from '@/features/pwa/components/InstallPrompt'
 import OfflineBanner from '@/features/pwa/components/OfflineBanner'
 import UpdateAvailableToast from '@/features/pwa/components/UpdateAvailableToast'
@@ -62,31 +62,27 @@ const navigateTo = (nextPath: string, replace = false) => {
 
 const getRedirectPath = (path: string, hasSession: boolean) => {
   if (getSharedNoteToken(path)) return null
+  if (isPublicAppPath(path)) return null
 
   if (!hasSession) {
     return path === '/login' ? null : '/login'
   }
 
-  if (path === '/' || path === '/login' || path === '/app' || path === '/portal') return '/portal/home'
-  if (path === '/markdown') return '/portal/markdown'
-  if (path === '/notes') return '/portal/notes'
-  if (
-    path === '/portal/home' ||
-    path === '/portal/markdown' ||
-    path === '/portal/notes' ||
-    path === '/portal/portfolio' ||
-    path === '/portal/portfolio/profile' ||
-    path === '/portal/portfolio/tech-stack'
-  ) return null
+  if (path === '/notes' || path === '/backend') return null
+  if (path === '/portal/notes') return '/notes'
 
-  return '/portal/home'
+  return '/notes'
 }
 
-const getActiveFeatureId = (path: string): FeatureId => {
-  if (path.startsWith('/portal/portfolio')) return 'portfolio'
-  if (path === '/portal/notes') return 'notes'
-  return 'markdown'
-}
+const isPublicMarkdownPath = (path: string) => path === '/markdown' || path === '/portal/markdown'
+
+const isPublicPortfolioPath = (path: string) =>
+  path === '/portfolio' ||
+  path.startsWith('/portfolio/') ||
+  path === '/portal/portfolio' ||
+  path.startsWith('/portal/portfolio/')
+
+const isPublicAppPath = (path: string) => isPublicMarkdownPath(path) || isPublicPortfolioPath(path)
 
 const getSharedNoteToken = (path: string) => {
   const match = path.match(/^\/share\/notes\/([^/]+)$/)
@@ -117,7 +113,7 @@ function PortalApp() {
   const handleLogin = (nextSession: AuthSession) => {
     localStorage.setItem(AUTH_KEY, JSON.stringify(nextSession))
     setSession(nextSession)
-    navigateTo('/portal/home')
+    navigateTo('/notes')
   }
 
   const handleLogout = () => {
@@ -127,9 +123,11 @@ function PortalApp() {
   }
 
   const toggleTheme = () => setTheme(currentTheme => currentTheme === 'dark' ? 'light' : 'dark')
-  const isHome = path === '/portal/home'
-  const activeFeatureId = getActiveFeatureId(path)
   const sharedNoteToken = getSharedNoteToken(path)
+  const isPublicMarkdown = isPublicMarkdownPath(path)
+  const isPublicPortfolio = isPublicPortfolioPath(path)
+  const portfolioBasePath = path.startsWith('/portal/portfolio') ? '/portal/portfolio' : '/portfolio'
+  const activeFeature: AuthenticatedFeatureId = path === '/backend' ? 'backend' : 'notes'
 
   return (
     <>
@@ -166,6 +164,10 @@ function PortalApp() {
 
       {sharedNoteToken ? (
         <SharedNotePage token={sharedNoteToken} />
+      ) : isPublicMarkdown ? (
+        <MarkdownWorkspace onNavigate={navigateTo} />
+      ) : isPublicPortfolio ? (
+        <PortfolioApp path={path} basePath={portfolioBasePath} onNavigate={navigateTo} />
       ) : !session ? (
         <MyPartnerLogin
           theme={theme}
@@ -178,11 +180,12 @@ function PortalApp() {
           theme={theme}
           onLogout={handleLogout}
           onToggleTheme={toggleTheme}
+          activeFeature={activeFeature}
+          onNavigate={navigateTo}
         >
-          {isHome && <PortalHome onNavigate={navigateTo} />}
-          {!isHome && activeFeatureId === 'markdown' && <MarkdownWorkspace onNavigate={navigateTo} ownerEmail={session.email} />}
-          {!isHome && activeFeatureId === 'notes' && <NotesApp ownerEmail={session.email} onNavigate={navigateTo} />}
-          {!isHome && activeFeatureId === 'portfolio' && <PortfolioApp path={path} onNavigate={navigateTo} />}
+          {activeFeature === 'notes'
+            ? <NotesApp ownerEmail={session.email} />
+            : <BackendConsole ownerEmail={session.email} />}
         </MyPartnerPortal>
       )}
     </>
