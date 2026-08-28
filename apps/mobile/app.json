@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "myPartner",
+    "slug": "mypartner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "mypartner",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mypartner.app"
+    },
+    "android": {
+      "package": "com.mypartner.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D241B"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "979d1dab-79db-4e43-adf9-c93962e2e198"
+      }
+    }
+  }
+}

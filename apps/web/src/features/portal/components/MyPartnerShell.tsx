@@ -283,7 +283,7 @@ export function MyPartnerPortal({
 }: PortalProps) {
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-surface-0 max-lg:h-auto max-lg:min-h-screen">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-1 px-4 lg:px-5">
+      <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-1 px-4 lg:px-5">
         <BrandMark />
         <div className="ml-auto flex items-center gap-2.5">
           <div className="hidden text-right sm:block">
@@ -305,9 +305,9 @@ export function MyPartnerPortal({
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden max-lg:flex-col">
-        <aside className="flex w-52 shrink-0 flex-col border-r border-line bg-surface-1 p-3 max-lg:w-full max-lg:border-r-0 max-lg:border-b">
-          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-ink-3">Apps</p>
-          <nav className="flex gap-1 max-lg:overflow-x-auto lg:flex-col" aria-label="Authenticated apps">
+        <aside className="flex w-52 shrink-0 flex-col border-r border-line bg-surface-1 p-3 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:h-[72px] max-lg:w-full max-lg:border-t max-lg:border-r-0 max-lg:p-2 max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-ink-3 max-lg:hidden">Apps</p>
+          <nav className="flex gap-1 lg:flex-col" aria-label="Authenticated apps">
             {authenticatedFeatures.map(feature => {
               const Icon = feature.icon
               const isActive = activeFeature === feature.id
@@ -316,7 +316,8 @@ export function MyPartnerPortal({
                   key={feature.id}
                   type="button"
                   onClick={() => onNavigate(feature.route)}
-                  className={`flex min-w-max items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition cursor-pointer ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex min-w-max items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition cursor-pointer max-lg:flex-1 max-lg:flex-col max-lg:justify-center max-lg:gap-0.5 max-lg:py-1.5 max-lg:text-[11px] ${
                     isActive
                       ? 'bg-forest text-white'
                       : 'text-ink-2 hover:bg-surface-2 hover:text-ink-1'
@@ -331,7 +332,7 @@ export function MyPartnerPortal({
         </aside>
 
         <section
-          className="flex min-h-0 flex-1 flex-col overflow-auto lg:overflow-hidden [&>.app-container]:flex-1 [&>.app-container]:min-h-0 [&>main]:flex-1 [&>main]:min-h-0"
+          className="flex min-h-0 flex-1 flex-col overflow-auto pb-[72px] lg:overflow-hidden lg:pb-0 [&>.app-container]:flex-1 [&>.app-container]:min-h-0 [&>main]:flex-1 [&>main]:min-h-0"
           aria-label="Feature workspace"
         >
           {children}

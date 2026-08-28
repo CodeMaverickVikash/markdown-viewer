@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "pnpm --filter @mypartner/web dev",
     "dev:web": "pnpm --filter @mypartner/web dev",
+    "dev:mobile": "pnpm --filter @mypartner/mobile start",
+    "android": "pnpm --filter @mypartner/mobile android",
+    "ios": "pnpm --filter @mypartner/mobile ios",
     "dev:markdown": "pnpm --filter @mypartner/markdown-editor dev",
     "dev:notes": "pnpm --filter @mypartner/note-taking dev",
     "build": "pnpm --filter @mypartner/web build",
@@ -13,6 +16,7 @@
     "build:packages": "pnpm --filter \"./packages/*\" build",
     "start": "pnpm --filter @mypartner/web start",
     "lint": "pnpm --filter @mypartner/web lint",
+    "typecheck:mobile": "pnpm --filter @mypartner/mobile typecheck",
     "typecheck": "pnpm -r --filter \"@mypartner/*\" typecheck"
   },
   "devDependencies": {

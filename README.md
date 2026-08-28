@@ -2,6 +2,18 @@
 
 myPartner is an offline-first workspace portal built as a pnpm monorepo. The Markdown editor is one package inside the project, alongside Notes, shared browser utilities, and a Next.js backend kept under the web app's `backend` folder.
 
+## Mobile app
+
+`apps/mobile` is an Expo shell for the deployed web app. It loads `https://my-partner-web.vercel.app/login` in a native WebView, keeps web-session cookies, opens links outside the myPartner domain in the device browser, and provides loading and retry states.
+
+Install the workspace dependencies, then start it with:
+
+```bash
+pnpm dev:mobile
+```
+
+Use the Expo Go app to scan the QR code, or run `pnpm android` / `pnpm ios` for a simulator or connected device. Before a store build, change the placeholder `ios.bundleIdentifier` and `android.package` values in `apps/mobile/app.json` to identifiers you own.
+
 ## Quick Start
 
 Install dependencies:
@@ -46,6 +58,9 @@ pnpm --filter @mypartner/web dev
 ```bash
 pnpm dev
 pnpm dev:web
+pnpm dev:mobile
+pnpm android
+pnpm ios
 pnpm dev:markdown
 pnpm dev:notes
 pnpm build

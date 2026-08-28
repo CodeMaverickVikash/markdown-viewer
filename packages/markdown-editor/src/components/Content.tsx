@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Menu, ChevronUp, FileText, Link, FolderOpen, Maximize2, Minimize2, Save, Copy, Check } from '@mypartner/common/dependencies'
+import { ArrowLeft, Menu, ChevronUp, FileText, Link, FolderOpen, Maximize2, Minimize2, Save, Copy, Check } from '@mypartner/common/dependencies'
 import MarkdownViewer from './MarkdownViewer'
 import type { MarkdownFile } from '../types'
 
@@ -9,11 +9,12 @@ interface ContentProps {
   onFileUpdate: (fileId: string, content: string) => void
   onSaveToSystem: (fileId: string, content?: string) => Promise<void>
   onToggleSidebar: () => void
+  onReturnToPortal: () => void
   sidebarVisible: boolean
   onDirtyChange?: (isDirty: boolean) => void
 }
 
-function Content({ file, onFileUpdate, onSaveToSystem, onToggleSidebar, sidebarVisible, onDirtyChange }: ContentProps) {
+function Content({ file, onFileUpdate, onSaveToSystem, onToggleSidebar, onReturnToPortal, sidebarVisible, onDirtyChange }: ContentProps) {
   const [scrollPosition, setScrollPosition] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
@@ -102,6 +103,14 @@ function Content({ file, onFileUpdate, onSaveToSystem, onToggleSidebar, sidebarV
     <main ref={mainRef} className="flex-1 flex flex-col bg-surface-1 overflow-hidden relative">
       {/* Toolbar */}
       <div className="sticky top-0 z-10 flex items-center px-3 py-1.5 bg-surface-2 border-b border-line gap-2 flex-wrap shrink-0">
+        <button
+          className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-line px-2 text-xs font-semibold text-ink-2 transition-all duration-200 hover:bg-surface-1 hover:text-forest active:scale-95 cursor-pointer"
+          onClick={onReturnToPortal}
+          title="Return to myPartner"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">myPartner</span>
+        </button>
         <button
           className="flex items-center justify-center cursor-pointer text-ink-2 transition-all duration-200 p-1.5 w-8 h-8 rounded-md hover:bg-surface-1 hover:text-forest active:scale-95 border border-line shrink-0"
           onClick={onToggleSidebar}

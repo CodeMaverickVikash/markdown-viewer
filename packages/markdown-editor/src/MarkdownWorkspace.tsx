@@ -308,6 +308,7 @@ function MarkdownWorkspace({ onNavigate, ownerEmail }: { onNavigate: (path: stri
         onFileUpdate={handleFileUpdate}
         onSaveToSystem={handleSaveToSystem}
         onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+        onReturnToPortal={() => onNavigate('/login')}
         sidebarVisible={sidebarVisible}
         onDirtyChange={(d) => { isDirtyRef.current = d }}
       />

@@ -13,7 +13,6 @@ import {
   type ThemeMode
 } from './components/MyPartnerShell'
 import BackendConsole from './components/BackendConsole'
-import InstallPrompt from '@/features/pwa/components/InstallPrompt'
 import OfflineBanner from '@/features/pwa/components/OfflineBanner'
 import UpdateAvailableToast from '@/features/pwa/components/UpdateAvailableToast'
 
@@ -132,7 +131,6 @@ function PortalApp() {
   return (
     <>
       <OfflineBanner />
-      <InstallPrompt />
       <UpdateAvailableToast />
       <Toaster
         position="bottom-right"

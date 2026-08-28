@@ -57,8 +57,8 @@ function Sidebar({
           <h1 className="text-sm font-semibold text-ink-1 flex items-center gap-2 uppercase tracking-wider">
             <button
               type="button"
-              onClick={() => onNavigate('/portal/home')}
-              title="Back to home"
+              onClick={() => onNavigate('/login')}
+              title="Return to myPartner"
               className="flex h-7 w-7 items-center justify-center rounded text-ink-3 transition hover:bg-surface-2 hover:text-ink-1 active:scale-95 shrink-0 cursor-pointer"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
