@@ -11,10 +11,51 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { WebView, type WebViewNavigation } from 'react-native-webview'
+import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview'
 
 const WEBSITE_URL = 'https://my-partner-web.vercel.app/'
 const WEBSITE_HOST = new URL(WEBSITE_URL).hostname
+const ROUTE_READY_MESSAGE = 'MYPARTNER_ROUTE_READY'
+const injectedRouteReadyScript = `
+  (function () {
+    if (window.__mypartnerRouteReadyBridgeInstalled) return true;
+    window.__mypartnerRouteReadyBridgeInstalled = true;
+
+    var notifyReady = function () {
+      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: '${ROUTE_READY_MESSAGE}',
+        url: window.location.href
+      }));
+    };
+
+    var scheduleReady = function () {
+      window.requestAnimationFrame(function () {
+        window.setTimeout(notifyReady, 0);
+      });
+    };
+
+    var pushState = window.history.pushState;
+    var replaceState = window.history.replaceState;
+
+    window.history.pushState = function () {
+      var result = pushState.apply(this, arguments);
+      scheduleReady();
+      return result;
+    };
+
+    window.history.replaceState = function () {
+      var result = replaceState.apply(this, arguments);
+      scheduleReady();
+      return result;
+    };
+
+    window.addEventListener('popstate', scheduleReady);
+    window.addEventListener('load', scheduleReady);
+    document.addEventListener('DOMContentLoaded', scheduleReady);
+    scheduleReady();
+    return true;
+  })();
+`
 
 export default function App() {
   const webViewRef = useRef<WebView>(null)
@@ -22,6 +63,16 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    if (!isLoading) return
+
+    const timeout = setTimeout(() => {
+      setIsLoading(false)
+    }, 15000)
+
+    return () => clearTimeout(timeout)
+  }, [isLoading])
 
   useEffect(() => {
     if (Platform.OS !== 'android') return
@@ -66,6 +117,20 @@ export default function App() {
     setReloadKey(key => key + 1)
   }
 
+  const handleWebMessage = useCallback((event: WebViewMessageEvent) => {
+    try {
+      const message = JSON.parse(event.nativeEvent.data) as { type?: string; url?: string }
+      if (message.type !== ROUTE_READY_MESSAGE || !message.url) return
+
+      const target = new URL(message.url)
+      if (target.hostname === WEBSITE_HOST) {
+        setIsLoading(false)
+      }
+    } catch {
+      // Ignore messages that are not from our route-ready bridge.
+    }
+  }, [])
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D241B" />
@@ -86,6 +151,7 @@ export default function App() {
           source={{ uri: WEBSITE_URL }}
           onLoadStart={() => setIsLoading(true)}
           onLoadEnd={() => setIsLoading(false)}
+          onMessage={handleWebMessage}
           onNavigationStateChange={state => {
             canGoBackRef.current = state.canGoBack
           }}
@@ -98,6 +164,7 @@ export default function App() {
           thirdPartyCookiesEnabled
           javaScriptEnabled
           domStorageEnabled
+          injectedJavaScript={injectedRouteReadyScript}
           allowsBackForwardNavigationGestures
           setSupportMultipleWindows={false}
         />
