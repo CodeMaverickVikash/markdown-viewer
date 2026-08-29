@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.mypartner.app",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0D241B"
       },

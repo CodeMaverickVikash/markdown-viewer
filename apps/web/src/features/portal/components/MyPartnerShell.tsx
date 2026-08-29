@@ -1,5 +1,4 @@
 import { useState, type ReactNode, type SyntheticEvent } from 'react'
-import Link from 'next/link'
 import {
   ArrowRight,
   BookOpenText,
@@ -36,6 +35,7 @@ interface ShellProps {
 
 interface LoginProps extends ShellProps {
   onLogin: (session: AuthSession) => void
+  onNavigate: (path: string) => void
 }
 
 interface PortalProps extends ShellProps {
@@ -108,7 +108,16 @@ const loginFeatures = [
   'Offline-first — no data leaves your browser',
 ]
 
-export function MyPartnerLogin({ theme, onLogin, onToggleTheme }: LoginProps) {
+const fetchWithTimeout = (url: string, options: RequestInit, timeoutMs = 4000) => {
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => {
+    window.clearTimeout(timeout)
+  })
+}
+
+export function MyPartnerLogin({ theme, onLogin, onNavigate, onToggleTheme }: LoginProps) {
   const { canInstall, installed, install } = useInstallPrompt()
   const [isChecking, setIsChecking] = useState(false)
   const [emailError, setEmailError] = useState('')
@@ -126,7 +135,7 @@ export function MyPartnerLogin({ theme, onLogin, onToggleTheme }: LoginProps) {
     setIsChecking(true)
     setEmailError('')
     try {
-      const res = await fetch(getApiUrl('/api/auth/check-email'), {
+      const res = await fetchWithTimeout(getApiUrl('/api/auth/check-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -152,7 +161,7 @@ export function MyPartnerLogin({ theme, onLogin, onToggleTheme }: LoginProps) {
 
   return (
     <main className="min-h-screen bg-surface-0">
-      <header className="flex h-14 items-center justify-between border-b border-line bg-surface-1 px-5 lg:px-10">
+      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface-1 px-5 lg:px-10">
         <BrandMark />
         <ThemeButton theme={theme} onToggleTheme={onToggleTheme} />
       </header>
@@ -186,20 +195,22 @@ export function MyPartnerLogin({ theme, onLogin, onToggleTheme }: LoginProps) {
           <div className="mt-8">
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">No sign-in required</p>
             <div className="mt-3 flex flex-wrap gap-3">
-              <Link
-                href="/markdown"
+              <button
+                type="button"
+                onClick={() => onNavigate('/markdown')}
                 className="inline-flex items-center gap-2 rounded-lg border border-forest/30 bg-forest/5 px-4 py-2 text-sm font-semibold text-forest transition hover:bg-forest/10"
               >
                 <BookOpenText className="h-4 w-4" />
                 Open Markdown Editor
-              </Link>
-              <Link
-                href="/portfolio"
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('/portfolio')}
                 className="inline-flex items-center gap-2 rounded-lg border border-forest/30 bg-forest/5 px-4 py-2 text-sm font-semibold text-forest transition hover:bg-forest/10"
               >
                 <BriefcaseBusiness className="h-4 w-4" />
                 View Portfolio
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -250,22 +261,6 @@ export function MyPartnerLogin({ theme, onLogin, onToggleTheme }: LoginProps) {
               </>
             )}
           </button>
-
-          <button
-            type="button"
-            onClick={installed ? undefined : canInstall ? install : () => toast('To install: click the ⊕ icon in your browser\'s address bar, or use browser menu → Install app')}
-            disabled={installed}
-            className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border px-6 py-2.5 text-sm font-medium transition active:scale-[0.98] ${
-              installed
-                ? 'cursor-default border-forest/30 bg-forest/5 text-forest'
-                : 'border-line bg-surface-0 text-ink-2 hover:border-forest/40 hover:bg-forest/5 hover:text-forest cursor-pointer'
-            }`}
-          >
-            {installed
-              ? <><CheckCircle2 className="h-4 w-4" /> App installed</>
-              : <><Download className="h-4 w-4" /> Install as App</>
-            }
-          </button>
         </form>
       </div>
     </main>
@@ -282,8 +277,8 @@ export function MyPartnerPortal({
   onNavigate,
 }: PortalProps) {
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-surface-0 max-lg:h-auto max-lg:min-h-screen">
-      <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-1 px-4 lg:px-5">
+    <main className="flex h-screen flex-col overflow-hidden bg-surface-0 max-lg:min-h-dvh">
+      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface-1 px-4 lg:px-5">
         <BrandMark />
         <div className="ml-auto flex items-center gap-2.5">
           <div className="hidden text-right sm:block">
@@ -304,8 +299,8 @@ export function MyPartnerPortal({
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden max-lg:flex-col">
-        <aside className="flex w-52 shrink-0 flex-col border-r border-line bg-surface-1 p-3 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:h-[72px] max-lg:w-full max-lg:border-t max-lg:border-r-0 max-lg:p-2 max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="flex min-h-0 flex-1 overflow-hidden pt-14 max-lg:flex-col">
+        <aside className="flex w-52 shrink-0 flex-col border-r border-line bg-surface-1 p-3 max-lg:fixed max-lg:inset-x-0 max-lg:top-14 max-lg:z-20 max-lg:h-16 max-lg:w-full max-lg:border-b max-lg:border-r-0 max-lg:p-2">
           <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-ink-3 max-lg:hidden">Apps</p>
           <nav className="flex gap-1 lg:flex-col" aria-label="Authenticated apps">
             {authenticatedFeatures.map(feature => {
@@ -332,7 +327,7 @@ export function MyPartnerPortal({
         </aside>
 
         <section
-          className="flex min-h-0 flex-1 flex-col overflow-auto pb-[72px] lg:overflow-hidden lg:pb-0 [&>.app-container]:flex-1 [&>.app-container]:min-h-0 [&>main]:flex-1 [&>main]:min-h-0"
+          className="flex min-h-0 flex-1 flex-col overflow-auto pt-16 lg:overflow-hidden lg:pt-0 [&>.app-container]:flex-1 [&>.app-container]:min-h-0 [&>main]:flex-1 [&>main]:min-h-0"
           aria-label="Feature workspace"
         >
           {children}

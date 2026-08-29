@@ -40,6 +40,7 @@ backend/supabase/.seed-dist/
 
 # env files (can opt-in for committing if needed)
 .env*
+!apps/mobile/.env.example
 
 # vercel
 .vercel

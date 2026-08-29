@@ -170,6 +170,7 @@ function PortalApp() {
         <MyPartnerLogin
           theme={theme}
           onLogin={handleLogin}
+          onNavigate={navigateTo}
           onToggleTheme={toggleTheme}
         />
       ) : (
